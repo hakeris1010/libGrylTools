@@ -61,25 +61,11 @@ TESTNAME= $(TEST1)
 
 #====================================#
 
-# set os-dependent libs
-ifeq ($(OS),Windows_NT)
-    #LDFLAGS += -lkernel32 -lWs2_32
-	#LIBS_GRYLTOOLS += -lWs2_32 -lkernel32
-else
-    CFLAGS += -std=gnu99 -pthread	
-	CXXFLAGS += -std=gnu11 -pthread
-    #LDFLAGS += -pthread
-endif
-
-#====================================#
-
-#====================================#
 GRYLTOOLS_INCL= $(INCLUDEDIR)/gryltools/
-GRYLTOOLSPP_INCL= $(INCLUDEDIR)/gryltools++/
-GRYLTOOLS_LIB= $(LIBDIR)/libgryltools.a
+GRYLTOOLS_LIB= $(LIBDIR)/libgryltools
+GRYLTOOLS_SHARED= $(GRYLTOOLS_LIB)
 
 GRYLTOOLS_INCLHEAD= #$(addprefix $(GRYLTOOLS_INCL), $(notdir HEADERS_GRYLTOOLS))    
-GRYLTOOLSPP_INCLHEAD= #$(addprefix $(GRYLTOOLS_INCL), $(notdir HEADERS_GRYLTOOLSPP))    
 
 GRYLTOOLS= gryltools
 
@@ -87,12 +73,27 @@ GRYLTOOLS= gryltools
 
 DEBUG_INCLUDES= -Isrc/gryltools -Isrc/gryltools++
 DEBUG_LIBCLUDES=
-RELEASE_INCLUDES= -I$(GRYLTOOLS_INCL) -I$(GRYLTOOLSPP_INCL)
+RELEASE_INCLUDES= -I$(GRYLTOOLS_INCL) 
 RELEASE_LIBCLUDES=
 
 BINPREFIX= 
 
 #===================================#
+
+# set os-dependent stuff
+ifeq ($(OS),Windows_NT)
+    LDFLAGS += -lkernel32 -lWs2_32
+	#LIBS_GRYLTOOLS += -lWs2_32 -lkernel32
+else
+    CFLAGS += -std=gnu99 -pthread	
+	CXXFLAGS += -std=gnu11 -pthread
+    LDFLAGS += -pthread
+
+	GRYLTOOLS_SHARED = $(GRYLTOOLS_SHARED).so
+endif
+
+#====================================#
+
 
 all: debug
 
@@ -112,23 +113,20 @@ debug: debops $(GRYLTOOLS)
 release: relops $(GRYLTOOLS) 
 
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c -o $*.o
+	$(CC) $(CFLAGS) -fpic -c $*.c -o $*.o
 
 .cpp.o:
-	$(CXX) $(CXXFLAGS) -c $*.cpp -o $*.o
+	$(CXX) $(CXXFLAGS) -fpic -c $*.cpp -o $*.o
 
 gryltools_incl: $(HEADERS_GRYLTOOLS) $(HEADERS_GRYLTOOLSPP)
-	mkdir -p $(GRYLTOOLS_INCL) $(GRYLTOOLSPP_INCL)    
-	for file in $(HEADERS_GRYLTOOLS) ; do \
+	mkdir -p $(GRYLTOOLS_INCL) 
+	for file in $^ ; do \
 		cp $$file $(GRYLTOOLS_INCL) ; \
 	done
-	for file in $(HEADERS_GRYLTOOLSPP) ; do \
-		cp $$file $(GRYLTOOLSPP_INCL) ; \
-	done
-
-
+	
 $(GRYLTOOLS_LIB): $(SOURCES_GRYLTOOLS:.c=.o) $(SOURCES_GRYLTOOLSPP:.cpp=.o) 
-	$(AR) -rvsc $@ $^ $(LIBS_GRYLTOOLS) $(LDFLAGS)
+	$(AR) -rvsc $@ $^ $(LIBS_GRYLTOOLS) 
+	$(CXX) -shared -o $(GRYLTOOLS_SHARED) $^ -Wl,--whole-archive $(LIBS_GRYLTOOLS) -Wl,--no-whole-archive $(LDFLAGS) 
 
 $(GRYLTOOLS): gryltools_incl $(GRYLTOOLS_LIB)   
 $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
@@ -155,4 +153,4 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) $(BINDIR)/*.* $(BINDIR)/*/*.* $(GRYLTOOLS_LIB) $(TESTNAME)
+	$(RM) $(BINDIR)/* $(BINDIR)/*/* $(LIBDIR)/* $(TESTNAME)
