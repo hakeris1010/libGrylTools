@@ -26,7 +26,8 @@ BINDIR_DEBUG= $(BINDIR)/debug
 
 #====================================#
 #set directories
-ZSH_RESULT:=$(shell mkdir -p $(TESTDIR) $(LIBDIR) $(BINDIR_RELEASE) $(BINDIR_DEBUG) $(INCLUDEDIR))
+ZSH_RESULT:=$(shell mkdir -p $(TESTDIR) $(LIBDIR) $(LIBDIR)/static $(LIBDIR)/shared \
+			  $(BINDIR_RELEASE) $(BINDIR_DEBUG) $(INCLUDEDIR))
 
 #====================================#
 #---------- Gryltools C ---------#
@@ -62,8 +63,8 @@ TESTNAME= $(TEST1)
 #====================================#
 
 GRYLTOOLS_INCL= $(INCLUDEDIR)/gryltools/
-GRYLTOOLS_LIB= $(LIBDIR)/libgryltools
-GRYLTOOLS_SHARED= $(GRYLTOOLS_LIB)
+GRYLTOOLS_LIB= $(LIBDIR)/static/libgryltools
+GRYLTOOLS_SHARED= $(LIBDIR)/shared/libgryltools
 
 GRYLTOOLS_INCLHEAD= #$(addprefix $(GRYLTOOLS_INCL), $(notdir HEADERS_GRYLTOOLS))    
 
@@ -84,6 +85,10 @@ BINPREFIX=
 ifeq ($(OS),Windows_NT)
     LDFLAGS += -lkernel32 -lWs2_32
 	#LIBS_GRYLTOOLS += -lWs2_32 -lkernel32
+
+	GRYLTOOLS_SHARED:= $(GRYLTOOLS_SHARED).dll
+	GRYLTOOLS_LIB:= $(GRYLTOOLS_LIB).a
+
 else
     CFLAGS += -std=gnu99 -pthread	
 	CXXFLAGS += -std=gnu11 -pthread
@@ -127,9 +132,11 @@ gryltools_incl: $(HEADERS_GRYLTOOLS) $(HEADERS_GRYLTOOLSPP)
 	
 $(GRYLTOOLS_LIB): $(SOURCES_GRYLTOOLS:.c=.o) $(SOURCES_GRYLTOOLSPP:.cpp=.o) 
 	$(AR) -rvsc $@ $^ $(LIBS_GRYLTOOLS) 
+
+$(GRYLTOOLS_SHARED): $(SOURCES_GRYLTOOLS:.c=.o) $(SOURCES_GRYLTOOLSPP:.cpp=.o) 
 	$(CXX) -shared -o $(GRYLTOOLS_SHARED) $^ -Wl,--whole-archive $(LIBS_GRYLTOOLS) -Wl,--no-whole-archive $(LDFLAGS) 
 
-$(GRYLTOOLS): gryltools_incl $(GRYLTOOLS_LIB)   
+$(GRYLTOOLS): gryltools_incl $(GRYLTOOLS_LIB) $(GRYLTOOLS_SHARED)   
 $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
 
 #===================================#

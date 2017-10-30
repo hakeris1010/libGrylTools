@@ -58,6 +58,7 @@ Temporary Items
 # Objects
 *.o
 *.so
+*.dll
 #*.obj
 build/obj/
 obj/
