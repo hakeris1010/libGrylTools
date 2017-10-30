@@ -89,7 +89,8 @@ else
 	CXXFLAGS += -std=gnu11 -pthread
     LDFLAGS += -pthread
 
-	GRYLTOOLS_SHARED = $(GRYLTOOLS_SHARED).so
+	GRYLTOOLS_SHARED:= $(GRYLTOOLS_SHARED).so
+	GRYLTOOLS_LIB:= $(GRYLTOOLS_LIB).a
 endif
 
 #====================================#
@@ -153,4 +154,4 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) $(BINDIR)/* $(BINDIR)/*/* $(LIBDIR)/* $(TESTNAME)
+	$(RM) $(BINDIR)/*/* $(LIBDIR)/* $(TESTNAME)

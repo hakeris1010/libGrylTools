@@ -57,6 +57,7 @@ Temporary Items
 
 # Objects
 *.o
+*.so
 #*.obj
 build/obj/
 obj/
