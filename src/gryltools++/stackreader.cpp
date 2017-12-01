@@ -97,28 +97,84 @@ bool StackReader::isReadable()
     return readable;
 }
 
-bool StackReader::getChar( char& c, int skipmode )
+bool StackReader::getChar( char& chr, int skipmode )
 {
-    if(skipmode != SKIPMODE_NOSKIP)
-        skipWhitespace( skipmode );
+    if(skipmode != SKIPMODE_NOSKIP){
+        // This should take care of buffer update 
+        if( !skipWhitespace( skipmode ) )
+           return false; 
+    }
 
-    // And continue the programming.
+    // Now get current char and increment the head.
+    chr = *( stackPtr++ );
+
+    return true;
 }
 
 bool StackReader::getString( char* st, size_t sz, int skipmode )
 {
-    
+    if(skipmode != SKIPMODE_NOSKIP){
+        // This should take care of buffer update 
+        if( !skipWhitespace( skipmode ) )
+           return false; 
+    }
+
+    // Now get that string in a Loop!
+    size_t read = 0, readTotal = 0;
+    while(readTotal < sz){
+        read = (size_t)(stackEnd - stackPtr);
+        read = (readTotal+read > sz ? sz-readTotal : read);
+
+        std::memcpy( st + readTotal, stackPtr, read );
+        stackPtr += read;
+
+        if(stackPtr >= stackEnd){
+            if( !updateBuffer() ) // No more to read
+                break; // Because we still read something.
+        }
+    }
+
+    return true;
 }
 
 bool StackReader::getString( std::string& str, int skipmode )
 {
-    
+    return getString( &(str[0]), str.size(), skipmode );
 }
+
 
 
 bool StackReader::skipWhitespace( int skipmode )
 {
+    size_t a,b;
+    return skipWhitespace(skipmode, a, b);
+}
+
+bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInLine ){
+    if(!readable)
+        return false;
     
+    while(1){
+        while(stackPtr < stackEnd){
+            char c = *stackPtr; // Get a character at current stack pointer position.
+            ++posInLine;
+
+            if(c == '\n'){
+                ++endlines;
+                posInLine=0;
+                if(skipmode == SKIPMODE_SKIPWS_NONEWLINE)
+                    return true; // Because newlines are not skipped.
+            }
+            else if( !std::isspace( c ) ) // Non-whitespace character found.
+                return true;
+
+            ++stackPtr;
+        }
+        // If reached this point, it means buffer is exhausted.
+        if( !updateBuffer() )
+            break; // No more to read.
+    } 
+    return false;
 }
 
 bool StackReader::skipUntil( char c )
@@ -129,7 +185,12 @@ bool StackReader::skipUntil( char c )
 
 bool StackReader::putChar( char c )
 {
-    
+    if(stackPtr <= stackBuffer) // Full buffer
+        prepareBuffer(); // Reallocate data to a bigger one
+
+    *(--stackPtr) = c;
+
+    return true;
 }
 
 bool StackReader::putString( const char* str, size_t sz )
