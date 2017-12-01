@@ -16,16 +16,20 @@ class StackReader{
         // priority buffer - extra space for storing putback'd bytes.
         // Once the stack becomes empty, the updateBuffer() is triggered, 
         // reading another chunk from the stream.
-        std::string priorityStack;
-        size_t stackPtr;
-        size_t stackEnd;
+        
+        char* stackBuffer;
+
+        size_t stackSize;
+        char* stackPtr;
+        char* stackEnd;
         size_t fileReadSize = DEFAULT_READBUFFER;
 
         const bool use_C;
         bool readable = true;
 
+        void setupStack();
         bool updateBuffer();
-        void prepareBuffer(size_t charsToFetch);
+        void prepareBuffer();
 
     public:
         const static size_t DEFAULT_READBUFFER = 256;
