@@ -18,19 +18,16 @@ class StackReader{
         // reading another chunk from the stream.
         std::string priorityStack;
         size_t stackPtr;
-        size_t stackEnd;
         size_t fileReadSize = DEFAULT_READBUFFER;
 
         const bool use_C;
         bool readable = true;
 
         bool updateBuffer();
-        void prepareBuffer(size_t charsToFetch);
 
     public:
         const static size_t DEFAULT_READBUFFER = 256;
         const static size_t DEFAULT_PRIORITY_STACK = 256; 
-        const static size_t DEFAULT_GROWTH = 256; 
 
         const static int SKIPMODE_NOSKIP = 0;
         const static int SKIPMODE_SKIPWS = 1;

@@ -45,10 +45,12 @@ HEADERS_GRYLTOOLS=  src/gryltools/grylthread.h \
 LIBS_GRYLTOOLS=
 
 #--------- Gryltools C++ --------#
+       
+SOURCES_GRYLTOOLSPP= src/gryltools++/stackreader.cpp \
 
-SOURCES_GRYLTOOLSPP= 
-
-HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp
+HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
+					 src/gryltools++/stackreader.hpp \
+				   # src/gryltools++/glogpp.hpp 
 
 #--------- Test sources ---------#
 
