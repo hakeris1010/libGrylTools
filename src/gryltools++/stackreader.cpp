@@ -37,16 +37,20 @@ StackReader::~StackReader()
 
 /*! If called, it will fetch n='fileReadSize' characters from a stream.
  * - The data gets put to stack, overwriting any existing data. 
+ * - If some active data is still on stack, it assumes the data is before the
+ *   file fetch sector (before the stackSize-fileReadSize point).
+ * @return true if successful.
  */ 
 bool StackReader::fetchBuffer()
 {
     int red = 0;
+    char* readSection = (stackBuffer + stackSize) - fileReadSize;
+
     if(use_C){
-        red = fread( (stackBuffer + stackSize) - fileReadSize,
-                     1, fileReadSize, cStream );
+        red = fread( readSection, 1, fileReadSize, cStream );
     }
     else{
-        iStream.read( (stackBuffer + stackSize) - fileReadSize, fileReadSize );  
+        iStream.read( readSection, fileReadSize );  
         red = iStream.gcount();
     }
 
@@ -57,9 +61,12 @@ bool StackReader::fetchBuffer()
         return false;
     }
     else{
-        //stackPtr = (stackBuffer + stackSize) - fileReadSize;
-        if(red != fileReadSize)
-            stackEnd = stackPtr + red; // Set a stack end by how much we read.
+        if( stackPtr > readSection )
+            stackPtr = readSection;
+        if( red != fileReadSize ){
+            // Set a stack end to how much we've read. 
+            stackEnd = readSection + red; 
+        }
     }
     return true;
 }
@@ -71,7 +78,8 @@ bool StackReader::fetchBuffer()
  *  @param moveAllowed - if enough free space, but bad ballance, move data.
  *  @return true if successful.
  */ 
-bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAllowed ){
+bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAllowed )
+{
     size_t newStackSize = 0, newDataStart = 0; // New stack properties.
     size_t dataSz = stackEnd - stackPtr;
         
@@ -138,69 +146,6 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
     return true;
 }
 
-/*
-bool StackReader::ensureSpaceInBack( size_t sz, bool canMoveData, size_t spaceOnBack ){
-
-}
-
- *! Get the buffer ready for fetching. Will do necessary moves if some data
- *  is still in da buffer.
- * 
-bool StackReader::prepareBuffer( int reallocMode, size_t extendSize, 
-        size_t priorityBuffSize = (stackSize - fileReadSize), 
-        size_t fileReadBuffSize = fileReadSize )
-{
-    size_t newStackSize = 0, newDataStart = 0; // New stack properties.
-    size_t cnt = stackEnd - stackPtr;  // Size of current data in stack.
-
-    // Check if no data on buffer - then just move the pointer where needed.
-    if( !cnt && (reallocMode==STACK_REALLOC_SPACE_BACK ? 
-                 extendSize <= fileReadBuffSize : 
-                 extendSize <= priorityBuffSize) ){
-        return true;
-    }
-
-    if( reallocMode == STACK_REALLOC_SPACE_BACK ){
-        char* newEnd = ((stackBuffer + stackSize) - extendSize);
-        // Check if space on back is too small - relocation of data needed.
-        if( stackEnd > newEnd ){ 
-            if( cnt <= stackSize - extendSize ) // Just relocate data, no new malloc()'s.
-                newDataStart = stackPtr - ( stackEnd - newEnd );
-            else{ // More data than can fit on current block.
-                newStackSize = extendSize + 0;
-            }
-        }
-
-        int extend = (stackBuffer + stackSize) - (stackEnd + extendSize);
-
-    }
-
-        // Check if the currently-inbuf char count is higher than the putback space.
-        if(cnt > (stackSize-fileReadSize)){ // If yes, realloc da buffer.
-            // Just make it bigger. 
-            stackSize = stackSize + cnt; 
-            char* tmp = new char[ stackSize ]; 
-            if(!tmp){
-                readable = false;
-                delete[] stackBuffer;
-                return false;
-            }
-
-            // Move the data to the new array - so that the end would be just on the 
-            // File Fetch Section start.
-            std::memmove( tmp + (stackSize - fileReadSize - cnt), stackPtr, cnt );
-            delete[] stackBuffer;
-
-            stackBuffer = tmp;
-            stackPtr = tmp + (stackSize - fileReadSize - cnt);
-            stackEnd = stackPtr + cnt;
-        }
-    }
-
-    // If no data, we don't have to do anything.
-    return true;
-}
-*/
 
 bool StackReader::isReadable() const {
     return readable;
@@ -262,19 +207,24 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
     if(!readable)
         return false;
     
+    char* curPosAfterEndl = stackPtr;
     while(1){
         while(stackPtr < stackEnd){
             char c = *stackPtr; // Get a character at current stack pointer position.
-            ++posInLine;
 
             if(c == '\n'){
                 ++endlines;
-                posInLine=0;
-                if(skipmode == SKIPMODE_SKIPWS_NONEWLINE)
+                curPosAfterEndl = stackPtr;
+
+                if(skipmode == SKIPMODE_SKIPWS_NONEWLINE){
+                    posInLine = (size_t)(stackPtr - curPosAfterEndl);
                     return true; // Because newlines are not skipped.
+                }
             }
-            else if( !std::isspace( c ) ) // Non-whitespace character found.
+            else if( !std::isspace( c ) ){ // Non-whitespace character found.
+                posInLine = (size_t)(stackPtr - curPosAfterEndl);
                 return true;
+            }
 
             ++stackPtr;
         }
@@ -282,6 +232,8 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
         if( !fetchBuffer() )
             break; // No more to read.
     } 
+
+    posInLine = (size_t)(stackPtr - curPosAfterEndl);
     return false;
 }
 
@@ -369,7 +321,7 @@ bool StackReader::putString( const char* str, size_t sz )
     return true;
 }
 
-bool unRead( size_t sz )
+bool StackReader::unRead( size_t sz )
 {
 
 }
