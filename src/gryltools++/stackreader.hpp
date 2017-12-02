@@ -27,10 +27,11 @@ protected:
 
     const bool use_C;
     bool readable = true;
+    bool streamReadable = true;
 
     void setupStack();
     bool fetchBuffer();
-    bool prepareBuffer(int reallocMode, size_t extendSize = 128 );
+    bool ensureSpace( size_t frontSpace, size_t backSpace, bool moveAllowed = true );
 
     const static int STACK_REALLOC_SPACE_FRONT = 1;
     const static int STACK_REALLOC_SPACE_BACK  = 2;

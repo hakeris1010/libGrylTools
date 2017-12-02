@@ -51,32 +51,130 @@ bool StackReader::fetchBuffer()
     }
 
     if( red <= 0 ){
-        readable = false;
+        if( stackEnd - stackPtr == 0 ) // No data
+            readable = false;
+        streamReadable = false;
         return false;
     }
     else{
-        stackPtr = (stackBuffer + stackSize) - fileReadSize;
+        //stackPtr = (stackBuffer + stackSize) - fileReadSize;
         if(red != fileReadSize)
             stackEnd = stackPtr + red; // Set a stack end by how much we read.
     }
+    return true;
 }
 
-/*! Get the buffer ready for fetching. Will do necessary moves if some data
- *  is still in da buffer.
+/*! Function ensures that stack has at least some space in front and back.
+ *  - Reallocated the memory if needed.
+ *  @param frontSpace  - minimum space on front to be ensured.
+ *  @param backSpace   - minimum space on back to be ensured.
+ *  @param moveAllowed - if enough free space, but bad ballance, move data.
+ *  @return true if successful.
  */ 
-bool StackReader::prepareBuffer( int reallocMode, size_t extendSize )
+bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAllowed ){
+    size_t newStackSize = 0, newDataStart = 0; // New stack properties.
+    size_t dataSz = stackEnd - stackPtr;
+        
+    // Check if data is present on stack.
+    if( dataSz ){ 
+        size_t currFront = stackPtr - stackBuffer;
+        size_t currBack  = (stackBuffer + stackSize) - stackEnd;
+ 
+        //if( (stackBuffer + frontSpace <= stackPtr) && 
+        //    (stackEnd + backSpace <= stackBuffer + stackSize) )
+        
+        // Check if current spaces on front and back are good.
+        if( currFront >= frontSpace && currBack >= backSpace )
+            return true;
+        else{ 
+            // Check if current free space is good, so we just need to move data.
+            if( moveAllowed && (currFront + currBack >= frontSpace + backSpace) ){
+                newDataStart = frontSpace;
+            }
+            else{ // Not enough free space. Reallocate!
+                // Set new sizes, and the new position of Data.
+                currFront = (currFront > frontSpace ? currFront : frontSpace);
+                currBack  = (currBack > backSpace ? currBack : backSpace);
+
+                newStackSize = currFront + (dataSz) + currBack;
+                newDataStart = currFront;
+            }
+        }
+    }
+    else{ // No data is present - just check if current size is good.
+        if( stackSize >= frontSpace + backSpace )
+            return true;
+        else{ // Set the reallocated memory new size.
+            newStackSize = frontSpace + backSpace; 
+        }
+    }
+
+    // At this point some move or reallocation is needed. 
+    char* moveDestination = stackBuffer;
+
+    // Check if we have to allocate new memory.
+    if( newStackSize ){
+        stackSize = newStackSize;
+        moveDestination = new char[ newStackSize ];
+
+        if( !moveDestination )
+            return false;
+    }
+
+    // Check if memmoves needed.
+    if( newDataStart ){
+        std::memmove( moveDestination + newDataStart, stackPtr, dataSz );
+        // Set new stack pointers.
+        stackPtr = moveDestination + newDataStart;
+        stackEnd = stackPtr + dataSz;
+    }
+
+    // If we have reallocated stuff, we need to delete old buffer, and set the new pointer.
+    if( newStackSize ){
+        delete[] stackBuffer;
+        stackBuffer = moveDestination;
+    }
+
+    return true;
+}
+
+/*
+bool StackReader::ensureSpaceInBack( size_t sz, bool canMoveData, size_t spaceOnBack ){
+
+}
+
+ *! Get the buffer ready for fetching. Will do necessary moves if some data
+ *  is still in da buffer.
+ * 
+bool StackReader::prepareBuffer( int reallocMode, size_t extendSize, 
+        size_t priorityBuffSize = (stackSize - fileReadSize), 
+        size_t fileReadBuffSize = fileReadSize )
 {
     size_t newStackSize = 0, newDataStart = 0; // New stack properties.
     size_t cnt = stackEnd - stackPtr;  // Size of current data in stack.
 
-    //if(!cnt && extendSize < 
+    // Check if no data on buffer - then just move the pointer where needed.
+    if( !cnt && (reallocMode==STACK_REALLOC_SPACE_BACK ? 
+                 extendSize <= fileReadBuffSize : 
+                 extendSize <= priorityBuffSize) ){
+        return true;
+    }
 
     if( reallocMode == STACK_REALLOC_SPACE_BACK ){
+        char* newEnd = ((stackBuffer + stackSize) - extendSize);
+        // Check if space on back is too small - relocation of data needed.
+        if( stackEnd > newEnd ){ 
+            if( cnt <= stackSize - extendSize ) // Just relocate data, no new malloc()'s.
+                newDataStart = stackPtr - ( stackEnd - newEnd );
+            else{ // More data than can fit on current block.
+                newStackSize = extendSize + 0;
+            }
+        }
 
         int extend = (stackBuffer + stackSize) - (stackEnd + extendSize);
 
     }
-/*
+
         // Check if the currently-inbuf char count is higher than the putback space.
         if(cnt > (stackSize-fileReadSize)){ // If yes, realloc da buffer.
             // Just make it bigger. 
@@ -98,10 +196,11 @@ bool StackReader::prepareBuffer( int reallocMode, size_t extendSize )
             stackEnd = stackPtr + cnt;
         }
     }
-*/
+
     // If no data, we don't have to do anything.
     return true;
 }
+*/
 
 bool StackReader::isReadable() const {
     return readable;
@@ -248,7 +347,7 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
 bool StackReader::putChar( char c )
 {
     if(stackPtr <= stackBuffer){ // Full buffer
-        if(!prepareBuffer( STACK_REALLOC_SPACE_FRONT )) // Reallocate data to a bigger one
+        if( !ensureSpace(1, 0) ) // Reallocate data to a bigger one
             return false;
     }
 
@@ -260,7 +359,7 @@ bool StackReader::putChar( char c )
 bool StackReader::putString( const char* str, size_t sz )
 {
     if( (stackPtr-sz) <= stackBuffer ){ // Full buffer
-        if(!prepareBuffer( STACK_REALLOC_SPACE_FRONT, sz )) // Reallocate data to a bigger one
+        if( !ensureSpace(sz, 0) ) // Reallocate data to a bigger one
             return false;
     }
 
