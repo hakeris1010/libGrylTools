@@ -1,9 +1,10 @@
 #include <iostream>
+#include <cstring>
 #include "stackreader.hpp"
 
 namespace gtools{
 
-StackReader::setupStack()
+void StackReader::setupStack()
 {
     // Allocate a block capable of holding this much characters.
     stackPtr = stackBuffer + (stackSize - 1);
@@ -37,7 +38,7 @@ StackReader::~StackReader()
 /*! If called, it will fetch n='fileReadSize' characters from a stream.
  * - The data gets put to stack, overwriting any existing data. 
  */ 
-bool StackReader::updateBuffer()
+bool StackReader::fetchBuffer()
 {
     int red = 0;
     if(use_C){
@@ -63,11 +64,19 @@ bool StackReader::updateBuffer()
 /*! Get the buffer ready for fetching. Will do necessary moves if some data
  *  is still in da buffer.
  */ 
-void prepareBuffer()
+bool StackReader::prepareBuffer( int reallocMode, size_t extendSize )
 {
-    // If data exists
-    if(stackPtr != (stackEnd-1)){
-        size_t cnt = stackEnd - stackPtr;
+    size_t newStackSize = 0, newDataStart = 0; // New stack properties.
+    size_t cnt = stackEnd - stackPtr;  // Size of current data in stack.
+
+    //if(!cnt && extendSize < 
+
+    if( reallocMode == STACK_REALLOC_SPACE_BACK ){
+
+        int extend = (stackBuffer + stackSize) - (stackEnd + extendSize);
+
+    }
+/*
         // Check if the currently-inbuf char count is higher than the putback space.
         if(cnt > (stackSize-fileReadSize)){ // If yes, realloc da buffer.
             // Just make it bigger. 
@@ -76,7 +85,7 @@ void prepareBuffer()
             if(!tmp){
                 readable = false;
                 delete[] stackBuffer;
-                return;
+                return false;
             }
 
             // Move the data to the new array - so that the end would be just on the 
@@ -89,11 +98,12 @@ void prepareBuffer()
             stackEnd = stackPtr + cnt;
         }
     }
+*/
     // If no data, we don't have to do anything.
+    return true;
 }
 
-bool StackReader::isReadable()
-{
+bool StackReader::isReadable() const {
     return readable;
 }
 
@@ -127,9 +137,10 @@ bool StackReader::getString( char* st, size_t sz, int skipmode )
 
         std::memcpy( st + readTotal, stackPtr, read );
         stackPtr += read;
+        readTotal += read;
 
         if(stackPtr >= stackEnd){
-            if( !updateBuffer() ) // No more to read
+            if( !fetchBuffer() ) // No more to read
                 break; // Because we still read something.
         }
     }
@@ -141,8 +152,6 @@ bool StackReader::getString( std::string& str, int skipmode )
 {
     return getString( &(str[0]), str.size(), skipmode );
 }
-
-
 
 bool StackReader::skipWhitespace( int skipmode )
 {
@@ -171,22 +180,77 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
             ++stackPtr;
         }
         // If reached this point, it means buffer is exhausted.
-        if( !updateBuffer() )
+        if( !fetchBuffer() )
             break; // No more to read.
     } 
     return false;
 }
 
-bool StackReader::skipUntil( char c )
+bool StackReader::skipUntilChar( char chr ){ 
+    size_t a,b;
+    return skipUntilChar( chr, a, b );
+}
+
+bool StackReader::skipUntilDelim( const std::string& delims ){
+    size_t a,b;
+    return skipUntilDelim( delims, a, b );
+}
+
+bool StackReader::skipUntilChar( char chr, size_t& endls, size_t& posls )
 {
+    return skipUntil( [chr](char c){ 
+        if( c == chr ) // char found
+            return true;
+        return false;        
+    }, endls, posls );   
+}
+
+bool StackReader::skipUntilDelim( const std::string& delims, size_t& endls, size_t& posls )
+{
+    return skipUntil( [ &delims ](char c){ 
+        if(delims.find( c ) != std::string::npos) // char found
+            return true;
+        return false;        
+    }, endls, posls );   
+}
+
+bool StackReader::skipUntil( std::function< bool(char) > delimCallback, 
+                             size_t& endlines, size_t& posInLine ) 
+{
+    if(!readable)
+        return false;
     
+    size_t lastPos = (size_t)stackPtr;
+    while(1){
+        while(stackPtr < stackEnd){
+            char c = *stackPtr; // Get a character at current stack pointer position.
+
+            if(c == '\n'){
+                ++endlines;
+                lastPos = (size_t)stackPtr;
+            }
+            else if( delimCallback( c ) ){ // Non-whitespace character found.
+                lastPos = (size_t)stackPtr - lastPos;
+                return true;
+            }
+
+            ++stackPtr;
+        }
+        // If reached this point, it means buffer is exhausted.
+        if( !fetchBuffer() )
+            break; // No more to read.
+    } 
+    lastPos = (size_t)stackPtr - lastPos;
+    return false;
 }
 
 
 bool StackReader::putChar( char c )
 {
-    if(stackPtr <= stackBuffer) // Full buffer
-        prepareBuffer(); // Reallocate data to a bigger one
+    if(stackPtr <= stackBuffer){ // Full buffer
+        if(!prepareBuffer( STACK_REALLOC_SPACE_FRONT )) // Reallocate data to a bigger one
+            return false;
+    }
 
     *(--stackPtr) = c;
 
@@ -195,11 +259,21 @@ bool StackReader::putChar( char c )
 
 bool StackReader::putString( const char* str, size_t sz )
 {
-    
+    if( (stackPtr-sz) <= stackBuffer ){ // Full buffer
+        if(!prepareBuffer( STACK_REALLOC_SPACE_FRONT, sz )) // Reallocate data to a bigger one
+            return false;
+    }
+
+    stackPtr -= sz;
+    std::memmove( stackPtr, str, sz );
+
+    return true;
 }
 
+bool unRead( size_t sz )
+{
 
-
+}
 
 }
 
