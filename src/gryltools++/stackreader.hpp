@@ -46,17 +46,25 @@ public:
     const static int SKIPMODE_SKIPWS = 1;
     const static int SKIPMODE_SKIPWS_NONEWLINE = 2;
 
-    StackReader( std::istream& is, size_t bufferSize = DEFAULT_READBUFFER, 
-                                   size_t prioritySize = DEFAULT_PRIORITY_STACK );
-    StackReader( FILE* inp, size_t bufferSize = DEFAULT_READBUFFER, 
-                            size_t prioritySize = DEFAULT_PRIORITY_STACK );
+    StackReader( std::istream& is, size_t prioritySize = DEFAULT_PRIORITY_STACK,
+                                   size_t bufferSize = DEFAULT_READBUFFER );
+                                   
+    StackReader( FILE* inp, size_t prioritySize = DEFAULT_PRIORITY_STACK, 
+                            size_t bufferSize = DEFAULT_READBUFFER );
 
     virtual ~StackReader();
 
     bool isReadable() const ;
-    bool getChar  ( char& c, int skipmode = SKIPMODE_NOSKIP );
-    size_t getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );
+    size_t getFrontSize() const;
+    size_t getBackSize() const;
+
+    bool getChar( char& chr );
+    bool getChar( char& c, int skipmode );
+    bool getChar( char& c, int skipmode, size_t& endlines, size_t& posInLine );
+
     size_t getString( std::string& str, int skipmode = SKIPMODE_NOSKIP );
+    size_t getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );
+    size_t getString( char* st, size_t sz, int skipmode, size_t& endlines, size_t& posInLine );
 
     bool skipWhitespace( int skipmode = SKIPMODE_SKIPWS );
     bool skipWhitespace( int skipmode, size_t& endlines, size_t& posInLine );

@@ -6,21 +6,21 @@ namespace gtools{
 
 void StackReader::setupStack()
 {
-    // Allocate a block capable of holding this much characters.
-    stackPtr = stackBuffer + (stackSize - 1);
-    stackEnd = stackBuffer + stackSize;
-
     stackBuffer = new char[ stackSize ];
+
+    // Allocate a block capable of holding this much characters.
+    stackEnd = stackBuffer + stackSize;
+    stackPtr = stackEnd; // Empty stack.
 }
 
-StackReader::StackReader( std::istream& is, size_t bufferSize, size_t prioritySize ) 
+StackReader::StackReader( std::istream& is, size_t prioritySize, size_t bufferSize ) 
     : iStream( is ), use_C( false ), fileReadSize( bufferSize ), 
       stackSize( prioritySize + bufferSize )
 {
     setupStack();
 }
 
-StackReader::StackReader( FILE* inp, size_t bufferSize, size_t prioritySize )
+StackReader::StackReader( FILE* inp, size_t prioritySize, size_t bufferSize )
     : iStream( std::cin ), cStream( inp ), use_C( true ), 
       fileReadSize( bufferSize ), stackSize( prioritySize + bufferSize )
 {
@@ -160,11 +160,19 @@ bool StackReader::isReadable() const {
     return readable;
 }
 
-bool StackReader::getChar( char& chr, int skipmode )
+size_t StackReader::getFrontSize() const {
+    return stackSize - fileReadSize;
+}
+
+size_t StackReader::getBackSize() const {
+    return fileReadSize;
+}
+
+bool StackReader::getChar( char& chr, int skipmode, size_t& endlines, size_t& posInLine )
 {
     if(skipmode != SKIPMODE_NOSKIP){
         // This should take care of buffer update 
-        if( !skipWhitespace( skipmode ) )
+        if( !skipWhitespace( skipmode, endlines, posInLine ) )
            return false; 
     }
     else if( !checkSetReadable() )
@@ -176,11 +184,24 @@ bool StackReader::getChar( char& chr, int skipmode )
     return true;
 }
 
-size_t StackReader::getString( char* st, size_t sz, int skipmode )
+bool StackReader::getChar( char& chr, int skipmode ){
+    size_t a,b;
+    return getChar(chr, skipmode, a, b);
+}
+
+bool StackReader::getChar( char& chr ){
+    if( !checkSetReadable() )
+        return false;
+
+    chr = *( stackPtr++ );
+    return true;
+}
+
+size_t StackReader::getString( char* st, size_t sz, int skipmode, size_t& endl, size_t& posl )
 {
     if(skipmode != SKIPMODE_NOSKIP){
         // This should take care of buffer update 
-        if( !skipWhitespace( skipmode ) )
+        if( !skipWhitespace( skipmode, endl, posl ) )
            return 0; 
     }
     else if( !checkSetReadable() )
@@ -205,8 +226,12 @@ size_t StackReader::getString( char* st, size_t sz, int skipmode )
     return readTotal;
 }
 
-size_t StackReader::getString( std::string& str, int skipmode )
-{
+size_t StackReader::getString( char* st, size_t sz, int skipmode ){
+    size_t a,b;
+    return getString( st, sz, skipmode, a, b );
+}
+
+size_t StackReader::getString( std::string& str, int skipmode ){
     return getString( &(str[0]), str.size(), skipmode );
 }
 
@@ -220,33 +245,41 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
     if(!readable)
         return false;
     
-    char* curPosAfterEndl = stackPtr;
+    char* lastEndlPos = stackPtr;
     while(1){
         while(stackPtr < stackEnd){
             char c = *stackPtr; // Get a character at current stack pointer position.
 
             if(c == '\n'){
                 ++endlines;
-                curPosAfterEndl = stackPtr;
+                lastEndlPos = stackPtr;
 
                 if(skipmode == SKIPMODE_SKIPWS_NONEWLINE){
-                    posInLine = (size_t)(stackPtr - curPosAfterEndl);
+                    posInLine = (size_t)(stackPtr - lastEndlPos);
+                    ++stackPtr;  // To point to next char after \n
                     return true; // Because newlines are not skipped.
                 }
             }
             else if( !std::isspace( c ) ){ // Non-whitespace character found.
-                posInLine = (size_t)(stackPtr - curPosAfterEndl);
+                posInLine = (size_t)(stackPtr - lastEndlPos);
                 return true;
             }
 
             ++stackPtr;
         }
-        // If reached this point, it means buffer is exhausted.
+
+        // Calculate current position after endline, to setup new, adapted for new stackPtr.
+        size_t diff = stackPtr - lastEndlPos;
+
+        // If reached this point, it means buffer is exhausted. Try to fetch new data.
         if( !fetchBuffer() )
             break; // No more to read.
+
+        // New stack pointer has been acquired - setup the pos counter.
+        lastEndlPos = (char*)(stackPtr - diff);
     } 
 
-    posInLine = (size_t)(stackPtr - curPosAfterEndl);
+    posInLine = (size_t)(stackPtr - lastEndlPos);
     return false;
 }
 
@@ -284,27 +317,34 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
     if(!readable)
         return false;
     
-    size_t lastPos = (size_t)stackPtr;
+    char* lastEndlPos = stackPtr;
     while(1){
         while(stackPtr < stackEnd){
             char c = *stackPtr; // Get a character at current stack pointer position.
 
             if(c == '\n'){
                 ++endlines;
-                lastPos = (size_t)stackPtr;
+                lastEndlPos = stackPtr;
             }
-            else if( delimCallback( c ) ){ // Non-whitespace character found.
-                lastPos = (size_t)stackPtr - lastPos;
+            if( delimCallback( c ) ){ // Deliminating character occured now.
+                posInLine = (size_t)(stackPtr - lastEndlPos);
                 return true;
             }
 
             ++stackPtr;
         }
-        // If reached this point, it means buffer is exhausted.
+        
+        // Calculate current position after endline, to setup new, adapted for new stackPtr.
+        size_t diff = stackPtr - lastEndlPos;
+
+        // If reached this point, it means buffer is exhausted. Try to fetch new data.
         if( !fetchBuffer() )
             break; // No more to read.
+
+        // New stack pointer has been acquired - setup the pos counter.
+        lastEndlPos = (char*)(stackPtr - diff); 
     } 
-    lastPos = (size_t)stackPtr - lastPos;
+    posInLine = (size_t)(stackPtr - lastEndlPos);
     return false;
 }
 
