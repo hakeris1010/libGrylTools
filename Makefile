@@ -62,7 +62,7 @@ TEST_C_SOURCES= src/test/test1.c
 
 TEST_CPP_SOURCES= src/test/stackreader_test.cpp 
 
-TEST_LIBS= $(GRYLTOOLS_LIB)
+TEST_LIBS= -lgryltools
 
 #====================================#
 
@@ -81,8 +81,8 @@ DEBUG_LIBCLUDES=
 RELEASE_INCLUDES= -I$(GRYLTOOLS_INCL) 
 RELEASE_LIBCLUDES=
 
-TEST_INCLUDES= $(INCLUDEDIR)
-TEST_LIBCLUDES= $(LIBDIR)/static
+TEST_INCLUDES=  -I$(INCLUDEDIR)
+TEST_LIBCLUDES= -L$(LIBDIR)/static
 
 BINPREFIX= 
 
@@ -152,20 +152,25 @@ $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
 test_main: test_debops tests
 
 test_debops: 
-	$(eval CFLAGS   = $(TEST_CFLAGS)   $(DEBUG_CFLAGS)   $(TEST_INCLUDES) )
-	$(eval CXXFLAGS = $(TEST_CXXFLAGS) $(DEBUG_CXXFLAGS) $(TEST_INCLUDES) )
-	$(eval LDFLAGS  = $(TEST_LDFLAGS)  $(DEBUG_LDFLAGS)  $(TEST_LIBCLUDES))
+	$(eval CFLAGS   = $(TEST_CFLAGS)   $(TEST_INCLUDES) )
+	$(eval CXXFLAGS = $(TEST_CXXFLAGS) $(TEST_INCLUDES) )
+	$(eval LDFLAGS  = $(TEST_LDFLAGS)  $(TEST_LIBCLUDES))
 
-tests: tests_cpp tests_c
+tests: tests_cpp 
 
 tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
 	for file in $^ ; do \
-		$(CXX) -o $(TESTDIR)/$(basename $$file) $$file $(TEST_LIBS) $(LDFLAGS) 
+		y=$${file%.o} ; \
+		$(CXX) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 	done
+
+# z=$${y##*/} ; \
+# echo $$z ; \
+# $(CXX) -o $(TESTDIR)/$${fl%.*} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 
 tests_c: $(TEST_C_SOURCES:.c=.o)
 	for file in $^ ; do \
-		$(CC) -o $(TESTDIR)/$(basename $$file) $$file $(TEST_LIBS) $(LDFLAGS) 
+		# $(CC)  -o $(TESTDIR)/$${file%.*} $$file $(TEST_LIBS) $(LDFLAGS) ; 
 	done
 
 #===================================#
@@ -174,6 +179,6 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) $(BINDIR)/*/* $(LIBDIR)/* 
+	$(RM) $(BINDIR)/* $(BINDIR)/*/* $(BINDIR)/*/*/* $(LIBDIR)/* 
 
 
