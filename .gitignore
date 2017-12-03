@@ -65,6 +65,8 @@ obj/
 
 # Binary dirs
 bin/
+include/
+lib/
 
 # Logfiles
 *.log

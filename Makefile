@@ -9,6 +9,10 @@ CFLAGS= -std=c99
 CXXFLAGS= -std=c++11
 LDFLAGS= 
 
+TEST_CFLAGS= -std=c99 -g
+TEST_CXXFLAGS= -std=c++11 -g
+TEST_LDFLAGS=
+
 DEBUG_CFLAGS= -g
 DEBUG_CXXFLAGS= -g
 DEBUG_LDFLAGS=
@@ -54,13 +58,11 @@ HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
 
 #--------- Test sources ---------#
 
-TEST1_SOURCES=  src/test/test1.c 
-TEST1_LIBS= $(GRYLTOOLS_LIB)
-TEST1= $(TESTDIR)/test1
+TEST_C_SOURCES= src/test/test1.c
 
-#---------  Test  list  ---------# 
+TEST_CPP_SOURCES= src/test/stackreader_test.cpp 
 
-TESTNAME= $(TEST1) 
+TEST_LIBS= $(GRYLTOOLS_LIB)
 
 #====================================#
 
@@ -78,6 +80,9 @@ DEBUG_INCLUDES= -Isrc/gryltools -Isrc/gryltools++
 DEBUG_LIBCLUDES=
 RELEASE_INCLUDES= -I$(GRYLTOOLS_INCL) 
 RELEASE_LIBCLUDES=
+
+TEST_INCLUDES= $(INCLUDEDIR)
+TEST_LIBCLUDES= $(LIBDIR)/static
 
 BINPREFIX= 
 
@@ -103,7 +108,7 @@ endif
 #====================================#
 
 
-all: debug
+all: debug test_main
 
 debops: 
 	$(eval CFLAGS += $(DEBUG_CFLAGS) $(DEBUG_INCLUDES))
@@ -144,18 +149,24 @@ $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
 #===================================#
 # Tests
 
-test_debug: debops $(TESTNAME)
+test_main: test_debops tests
 
-$(TEST1): $(filter %.o, $(TEST1_SOURCES:.cpp=.o) $(TEST1_SOURCES:.c=.o))
-	$(CC) -o $@ $^ $(TEST1_LIBS) $(LDFLAGS)
+test_debops: 
+	$(eval CFLAGS   = $(TEST_CFLAGS)   $(DEBUG_CFLAGS)   $(TEST_INCLUDES) )
+	$(eval CXXFLAGS = $(TEST_CXXFLAGS) $(DEBUG_CXXFLAGS) $(TEST_INCLUDES) )
+	$(eval LDFLAGS  = $(TEST_LDFLAGS)  $(DEBUG_LDFLAGS)  $(TEST_LIBCLUDES))
 
-## $1 - target name, $2 - sources, $3 - libs
-#define make_test_target
-# $1: \$(patsubst %.c,%.o, $2) $3
-#	$(CC) -o $@ $^ $(LDFLAGS)
-#endef    
-#
-#$(foreach elem, $(TESTNAME), $(eval $(call make_test_target, elem, )) )
+tests: tests_cpp tests_c
+
+tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
+	for file in $^ ; do \
+		$(CXX) -o $(TESTDIR)/$(basename $$file) $$file $(TEST_LIBS) $(LDFLAGS) 
+	done
+
+tests_c: $(TEST_C_SOURCES:.c=.o)
+	for file in $^ ; do \
+		$(CC) -o $(TESTDIR)/$(basename $$file) $$file $(TEST_LIBS) $(LDFLAGS) 
+	done
 
 #===================================#
 
@@ -163,4 +174,6 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) $(BINDIR)/*/* $(LIBDIR)/* $(TESTNAME)
+	$(RM) $(BINDIR)/*/* $(LIBDIR)/* 
+
+
