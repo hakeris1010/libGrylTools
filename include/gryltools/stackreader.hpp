@@ -32,6 +32,7 @@ protected:
     void setupStack();
     bool fetchBuffer();
     bool ensureSpace( size_t frontSpace, size_t backSpace, bool moveAllowed = true );
+    inline bool checkSetReadable();
 
     const static int STACK_REALLOC_SPACE_FRONT = 1;
     const static int STACK_REALLOC_SPACE_BACK  = 2;
@@ -54,12 +55,11 @@ public:
 
     bool isReadable() const ;
     bool getChar  ( char& c, int skipmode = SKIPMODE_NOSKIP );
-    bool getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );
-    bool getString( std::string& str, int skipmode = SKIPMODE_NOSKIP );
+    size_t getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );
+    size_t getString( std::string& str, int skipmode = SKIPMODE_NOSKIP );
 
     bool skipWhitespace( int skipmode = SKIPMODE_SKIPWS );
     bool skipWhitespace( int skipmode, size_t& endlines, size_t& posInLine );
-    //bool skipUntil( bool (*delimCallback)(char), size_t& endlines, size_t& posInLine );
     bool skipUntil( std::function< bool(char) > delimCbk, size_t& endls, size_t& posls ); 
 
     bool skipUntilChar( char chr );

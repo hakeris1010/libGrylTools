@@ -55,7 +55,7 @@ bool StackReader::fetchBuffer()
     }
 
     if( red <= 0 ){
-        if( stackEnd - stackPtr == 0 ) // No data
+        if( stackEnd - stackPtr <= 0 ) // No data
             readable = false;
         streamReadable = false;
         return false;
@@ -63,10 +63,9 @@ bool StackReader::fetchBuffer()
     else{
         if( stackPtr > readSection )
             stackPtr = readSection;
-        if( red != fileReadSize ){
-            // Set a stack end to how much we've read. 
-            stackEnd = readSection + red; 
-        }
+
+        // Set a stack end to how much we've read. 
+        stackEnd = readSection + red;
     }
     return true;
 }
@@ -146,6 +145,16 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
     return true;
 }
 
+inline bool StackReader::checkSetReadable(){
+    if( !readable )
+        return false;
+    else if( stackPtr >= stackEnd ){
+        if( !fetchBuffer() )
+            return false;
+    }
+    return true;
+}
+
 
 bool StackReader::isReadable() const {
     return readable;
@@ -158,6 +167,8 @@ bool StackReader::getChar( char& chr, int skipmode )
         if( !skipWhitespace( skipmode ) )
            return false; 
     }
+    else if( !checkSetReadable() )
+        return false;
 
     // Now get current char and increment the head.
     chr = *( stackPtr++ );
@@ -165,17 +176,19 @@ bool StackReader::getChar( char& chr, int skipmode )
     return true;
 }
 
-bool StackReader::getString( char* st, size_t sz, int skipmode )
+size_t StackReader::getString( char* st, size_t sz, int skipmode )
 {
     if(skipmode != SKIPMODE_NOSKIP){
         // This should take care of buffer update 
         if( !skipWhitespace( skipmode ) )
-           return false; 
+           return 0; 
     }
+    else if( !checkSetReadable() )
+        return 0;
 
     // Now get that string in a Loop!
     size_t read = 0, readTotal = 0;
-    while(readTotal < sz){
+    while(readTotal < sz && readable){
         read = (size_t)(stackEnd - stackPtr);
         read = (readTotal+read > sz ? sz-readTotal : read);
 
@@ -189,10 +202,10 @@ bool StackReader::getString( char* st, size_t sz, int skipmode )
         }
     }
 
-    return true;
+    return readTotal;
 }
 
-bool StackReader::getString( std::string& str, int skipmode )
+size_t StackReader::getString( std::string& str, int skipmode )
 {
     return getString( &(str[0]), str.size(), skipmode );
 }
@@ -299,7 +312,7 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
 bool StackReader::putChar( char c )
 {
     if(stackPtr <= stackBuffer){ // Full buffer
-        if( !ensureSpace(1, 0) ) // Reallocate data to a bigger one
+        if( !ensureSpace(1, 0, true) ) // Reallocate data to a bigger one
             return false;
     }
 
@@ -311,7 +324,7 @@ bool StackReader::putChar( char c )
 bool StackReader::putString( const char* str, size_t sz )
 {
     if( (stackPtr-sz) <= stackBuffer ){ // Full buffer
-        if( !ensureSpace(sz, 0) ) // Reallocate data to a bigger one
+        if( !ensureSpace(sz, 0, true) ) // Reallocate data to a bigger one
             return false;
     }
 
@@ -321,9 +334,15 @@ bool StackReader::putString( const char* str, size_t sz )
     return true;
 }
 
+// TODO:
 bool StackReader::unRead( size_t sz )
 {
-
+    // Possible to safely unread only if no relocations were made in past 'sz'-long reads.
+    /*if( movesAfterRelocation >= sz && (stackPtr - stackBuffer >= sz) ){
+        stackPtr -= sz;
+        return true;
+    }*/
+    return false;
 }
 
 }
