@@ -320,7 +320,7 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
     char* lastEndlPos = stackPtr;
     while(1){
         while(stackPtr < stackEnd){
-            char c = *stackPtr; // Get a character at current stack pointer position.
+            char c = *(stackPtr++); // Get a character at current stack pointer position.
 
             if(c == '\n'){
                 ++endlines;
@@ -331,7 +331,7 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
                 return true;
             }
 
-            ++stackPtr;
+            //++stackPtr;
         }
         
         // Calculate current position after endline, to setup new, adapted for new stackPtr.
@@ -358,6 +358,7 @@ bool StackReader::putChar( char c )
 
     *(--stackPtr) = c;
 
+    readable = true;
     return true;
 }
 
@@ -370,8 +371,13 @@ bool StackReader::putString( const char* str, size_t sz )
 
     stackPtr -= sz;
     std::memmove( stackPtr, str, sz );
-
+    
+    readable = true;
     return true;
+}
+
+bool StackReader::putString( const std::string& str ){
+    return putString( str.c_str(), str.size() );
 }
 
 // TODO:
@@ -384,6 +390,8 @@ bool StackReader::unRead( size_t sz )
     }*/
     return false;
 }
+ 
+
 
 }
 

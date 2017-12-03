@@ -78,6 +78,7 @@ public:
     bool putChar( char c );
     bool unRead( size_t sz );
     bool putString( const char* str, size_t sz );
+    bool putString( const std::string& str );
 };
 
 }
