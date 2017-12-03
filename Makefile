@@ -156,7 +156,7 @@ test_debops:
 	$(eval CXXFLAGS = $(TEST_CXXFLAGS) $(TEST_INCLUDES) )
 	$(eval LDFLAGS  = $(TEST_LDFLAGS)  $(TEST_LIBCLUDES))
 
-tests: tests_cpp 
+tests: tests_cpp tests_c
 
 tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
 	for file in $^ ; do \
@@ -164,13 +164,10 @@ tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
 		$(CXX) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 	done
 
-# z=$${y##*/} ; \
-# echo $$z ; \
-# $(CXX) -o $(TESTDIR)/$${fl%.*} $$file $(TEST_LIBS) $(LDFLAGS) ; \
-
 tests_c: $(TEST_C_SOURCES:.c=.o)
 	for file in $^ ; do \
-		# $(CC)  -o $(TESTDIR)/$${file%.*} $$file $(TEST_LIBS) $(LDFLAGS) ; 
+		y=$${file%.o} ; \
+		$(CC) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 	done
 
 #===================================#
@@ -179,6 +176,15 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) $(BINDIR)/* $(BINDIR)/*/* $(BINDIR)/*/*/* $(LIBDIR)/* 
+	$(RM) -rf $(BINDIR) $(LIBDIR)
 
+# $(RM) -rf $(BINDIR)/* $(BINDIR)/*/* $(BINDIR)/*/*/* $(LIBDIR)/* 
+
+#TODO: Check if Test exists before compiling.
+
+# y= $${file%.o} ; \
+# exe= $(TESTDIR)/$${y##*/}.exe ; \
+# if [ ! -f $$exe ] || [ "$$file" -nt "$$exe" ] ; then \
+# 	$(CXX) -o $$exe $$file $(TEST_LIBS) $(LDFLAGS) ; \
+# fi ; \
 
