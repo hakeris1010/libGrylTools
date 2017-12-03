@@ -20,9 +20,9 @@ RELEASE_CFLAGS= -O2
 RELEASE_CXXFLAGS= -O2
 RELEASE_LDFLAGS=
 
-LIBDIR= ./lib
-INCLUDEDIR= ./include
-BINDIR= ./bin
+LIBDIR= lib
+INCLUDEDIR= include
+BINDIR= bin
 TESTDIR= $(BINDIR)/test
 
 BINDIR_RELEASE= $(BINDIR)/release
@@ -149,7 +149,7 @@ $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
 #===================================#
 # Tests
 
-test_main: test_debops tests
+test_main: test_debops tests_cpp
 
 test_debops: 
 	$(eval CFLAGS   = $(TEST_CFLAGS)   $(TEST_INCLUDES) )
@@ -161,8 +161,15 @@ tests: tests_cpp tests_c
 tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
 	for file in $^ ; do \
 		y=$${file%.o} ; \
-		$(CXX) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
+		exe=$(TESTDIR)/$${y##*/} ; \
+		if [ ! -f $$exe ] || [ $$file -nt $$exe ] ; then \
+			echo "Recompiling test $$exe ..." ; \
+			$(CXX) -o $$exe $$file $(TEST_LIBS) $(LDFLAGS) ; \
+		fi ; \
 	done
+
+# y=$${file%.o} ; \
+# $(CXX) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 
 tests_c: $(TEST_C_SOURCES:.c=.o)
 	for file in $^ ; do \
@@ -179,12 +186,4 @@ clean_all: clean
 	$(RM) -rf $(BINDIR) $(LIBDIR)
 
 # $(RM) -rf $(BINDIR)/* $(BINDIR)/*/* $(BINDIR)/*/*/* $(LIBDIR)/* 
-
-#TODO: Check if Test exists before compiling.
-
-# y= $${file%.o} ; \
-# exe= $(TESTDIR)/$${y##*/}.exe ; \
-# if [ ! -f $$exe ] || [ "$$file" -nt "$$exe" ] ; then \
-# 	$(CXX) -o $$exe $$file $(TEST_LIBS) $(LDFLAGS) ; \
-# fi ; \
 
