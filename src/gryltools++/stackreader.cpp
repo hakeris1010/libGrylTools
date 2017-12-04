@@ -155,9 +155,8 @@ inline bool StackReader::checkSetReadable(){
     return true;
 }
 
-
-bool StackReader::isReadable() const {
-    return readable;
+bool StackReader::isReadable() {
+    return checkSetReadable();
 }
 
 size_t StackReader::getFrontSize() const {
@@ -166,6 +165,21 @@ size_t StackReader::getFrontSize() const {
 
 size_t StackReader::getBackSize() const {
     return fileReadSize;
+}
+
+size_t StackReader::currentLength() const {
+    return (size_t)(stackEnd - stackPtr);
+}
+
+void StackReader::getCharUnsafe( char& chr )
+{   // Simply read char on stack pointer, no checking whatsoever.
+    chr = *( stackPtr++ );
+}
+
+void StackReader::getStringUnsafe( char* str, size_t len )
+{   // Simply read string from stack pointer, no checking whatsoever.
+    std::memmove( str, stackPtr, len );
+    stackPtr += len;
 }
 
 bool StackReader::getChar( char& chr, int skipmode, size_t& endlines, size_t& posInLine )

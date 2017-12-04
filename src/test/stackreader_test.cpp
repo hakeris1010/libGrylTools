@@ -11,18 +11,21 @@ const char* data =
     "  \n  \t\n gryllotronix woop woop\n da ting goes skrrrrra bnjab    \n\n"
     "mbababd najbd \n asfbaf ayge u88 \n6a   aff a1337;";
 
-void testGetChar( gtools::StackReader& rdr, const char* result, size_t resSize ){
+void testGetChar( gtools::StackReader& rdr, const char* result, size_t resSize, size_t endPosition = -1 ){
     char c;
+    if(debug)
+        std::cout<<"[ Test GetChar ]: buffer:\n\"";
     for( const char* i = result; i < result + resSize; i++ ){
         assert( rdr.getChar( c ) );
         if(debug)
             std::cout<< c;
 
         assert( c == *i );
-        assert( rdr.isReadable() );
+        if( i - result < endPosition )
+            assert( rdr.isReadable() );
     }
     if(debug)
-        std::cout<<"\n";
+        std::cout<<"\"\n";
 }
 
 void testGetChar( gtools::StackReader& rdr, const std::string& result ){
@@ -40,7 +43,7 @@ void testGetString( gtools::StackReader& rdr, int skipmode, const std::string& r
     assert( p == posline );
 
     if(debug)
-        std::cout<<"\n"<< buf <<"\n[NuLines: "<<n<<", PosLines: "<<p<<"]\n";
+        std::cout<<"[ Test GetString ]: buffer:\n\""<< buf <<"\"\n[NuLines: "<<n<<", PosLines: "<<p<<"]\n";
 }
 
 void testSkipWhitespace(gtools::StackReader& rdr, int skipmode, size_t nulines, size_t posline){
@@ -96,15 +99,51 @@ void testLastCharactersByGetString( gtools::StackReader& rdr, const std::string&
     lastBuff.erase(0, lastBuff.size() - lastChars.size());
 
     if(debug)
-        std::cout<<"[ Last chars of reader: \""<<lastBuff<<"\"\n  Lines: "<<n<<", Pos:"<<p<<"\n";
+        std::cout<<"[ Last chars of reader: \""<<lastBuff<<"\", Lines: "<<n<<", Pos:"<<p<<"\n";
 
     assert( lastBuff == lastChars );
     assert( n == lns );
     assert( !rdr.isReadable() );
 }
 
+void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool end ){
+    char c;
+    if(debug)
+        std::cout<<"[ Test GetCharUnsafe ]: buffer: \n\"";
+    for(const char* i = res.c_str(); i < res.c_str()+res.size(); i++){
+        rdr.getCharUnsafe( c );
+        assert( c == *i );
+        if(debug)
+            std::cout<<c;
+    }
+    if(debug)
+        std::cout<<"\"\n[ Test GetCharUnsafe end. Left length: "<<rdr.currentLength()<<" ]\n";
+    if(end)
+        assert( rdr.isReadable() );
+    else
+        assert( !rdr.isReadable() );
+}
+
+void testGetStringUnsafe( gtools::StackReader& rdr, const std::string& res, bool end ){
+    char c;
+    std::string buf( res.size(), '\0' );
+    assert( buf == res );
+    if(debug)
+        std::cout<<"[ Test GetStringUnsafe. Left length: "<<rdr.currentLength()<<"\n";
+    if(end)
+        assert( rdr.isReadable() );
+    else
+        assert( !rdr.isReadable() );
+}
+
+void testCurrentLength( gtools::StackReader& rdr, size_t len ){
+    if(debug)
+        std::cout<<"[Current length: "<<rdr.currentLength()<<"\n";
+    assert( len == rdr.currentLength() );
+}
+
 int main(){
-    std::cout<<"Testing gtools::StackReader ... ";
+    std::cout<<"[ Testing gtools::StackReader ] ... ";
     if(debug) std::cout<<"\n";
 
     // Testing streams and buffers.
@@ -113,7 +152,7 @@ int main(){
     char c = 'a';
 
     // Create a stack reader with fetch size of 16, and front space of 16.
-    gtools::StackReader rdr( iss, 3, 5 );
+    gtools::StackReader rdr( iss, 8, 8 );
 
     testGetChar(rdr, data, 10);
     testGetChar(rdr, data+10, 20);
@@ -139,15 +178,26 @@ int main(){
 
     testGetChar(rdr, "\n ");    
     testSkipUntilDelim( rdr, "xi", 0, 11 );
-    testLastCharactersByGetString(rdr, "1337;", gtools::StackReader::SKIPMODE_SKIPWS, 5, 0); 
 
-    // FIXME: HUGE BUG!!!
+    testLastCharactersByGetString(rdr, "1337;", gtools::StackReader::SKIPMODE_SKIPWS, 5, 0); 
+    testCurrentLength(rdr, 0);
+
+    rdr.putChar('B');
+    testCurrentLength(rdr, 1);
+
+    testGetChar(rdr,"B", 0);
+    testCurrentLength(rdr, 0);
+
     //rdr.putString(" \n noot n\n  oot");
     //testLastCharactersByGetString(rdr, "oot", gtools::StackReader::SKIPMODE_SKIPWS, 2, 0); 
+
+    //rdr.putString("testing unsafe");
+    //testGetCharUnsafe(rdr, "testin", false);
+    //testGetStringUnsafe(rdr, "g unsafe", false);
  
     if(debug) std::cout<<"\nTest end. Stack Front: "<<rdr.getFrontSize()<<
                          ", Stack Back: "<<rdr.getBackSize()<<"\n";
-    std::cout<<"Passed!\n";
+    std::cout<<"[ Passed! ]\n";
 
     return 0;
 }

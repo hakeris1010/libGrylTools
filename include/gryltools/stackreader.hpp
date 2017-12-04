@@ -54,13 +54,17 @@ public:
 
     virtual ~StackReader();
 
-    bool isReadable() const ;
+    bool isReadable();
     size_t getFrontSize() const;
     size_t getBackSize() const;
+    size_t currentLength() const;
 
     bool getChar( char& chr );
     bool getChar( char& c, int skipmode );
     bool getChar( char& c, int skipmode, size_t& endlines, size_t& posInLine );
+
+    void getCharUnsafe( char& chr );
+    void getStringUnsafe( char* str, size_t len );
 
     size_t getString( std::string& str, int skipmode = SKIPMODE_NOSKIP );
     size_t getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );
