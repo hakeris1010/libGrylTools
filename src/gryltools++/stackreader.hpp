@@ -5,11 +5,14 @@
 #include <cstdio>
 #include <string>
 #include <functional>
+#include <cstring>
 
 namespace gtools{
 
 class StackReader{
 protected:
+    const bool use_C;
+
     std::istream& iStream;
     FILE* cStream = nullptr;
 
@@ -20,12 +23,11 @@ protected:
     
     char* stackBuffer;
 
+    size_t fileReadSize = DEFAULT_READBUFFER;
     size_t stackSize;
     char* stackPtr;
     char* stackEnd;
-    size_t fileReadSize = DEFAULT_READBUFFER;
 
-    const bool use_C;
     bool readable = true;
     bool streamReadable = true;
 
@@ -63,8 +65,19 @@ public:
     bool getChar( char& c, int skipmode );
     bool getChar( char& c, int skipmode, size_t& endlines, size_t& posInLine );
 
-    void getCharUnsafe( char& chr );
-    void getStringUnsafe( char* str, size_t len );
+    int getChar();
+    int peekChar();
+
+    // Simply read char on stack pointer, no checking whatsoever.
+    void getCharUnsafe( char& chr ) {   
+        chr = *( stackPtr++ );
+    }
+
+    // Simply read string from stack pointer, no checking whatsoever.
+    void getStringUnsafe( char* str, size_t len ) {   
+        std::memmove( str, stackPtr, len );
+        stackPtr += len;
+    }
 
     size_t getString( std::string& str, int skipmode = SKIPMODE_NOSKIP );
     size_t getString( char* st, size_t sz, int skipmode = SKIPMODE_NOSKIP );

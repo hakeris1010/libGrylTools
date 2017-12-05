@@ -12,9 +12,10 @@ LDFLAGS=
 TEST_CFLAGS= -std=c99 -g
 TEST_CXXFLAGS= -std=c++11 -g
 TEST_LDFLAGS=
+TEST_EXEC_ARGS=
 
-DEBUG_CFLAGS= -g
-DEBUG_CXXFLAGS= -g
+DEBUG_CFLAGS= -g -Wall
+DEBUG_CXXFLAGS= -g -Wall
 DEBUG_LDFLAGS=
 RELEASE_CFLAGS= -O2
 RELEASE_CXXFLAGS= -O2
@@ -150,6 +151,9 @@ $(GRYLTOOLS)_debug: debops $(GRYLTOOLS)
 # Tests
 
 test_main: test_debops tests_cpp
+	for file in $(TESTDIR)/* ; do \
+		./$$file $(TEST_EXEC_ARGS) ; \
+	done
 
 test_debops: 
 	$(eval CFLAGS   = $(TEST_CFLAGS)   $(TEST_INCLUDES) )

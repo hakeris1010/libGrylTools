@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstring>
 #include "stackreader.hpp"
 
 namespace gtools{
@@ -14,14 +13,14 @@ void StackReader::setupStack()
 }
 
 StackReader::StackReader( std::istream& is, size_t prioritySize, size_t bufferSize ) 
-    : iStream( is ), use_C( false ), fileReadSize( bufferSize ), 
+    : use_C( false ), iStream( is ), fileReadSize( bufferSize ), 
       stackSize( prioritySize + bufferSize )
 {
     setupStack();
 }
 
 StackReader::StackReader( FILE* inp, size_t prioritySize, size_t bufferSize )
-    : iStream( std::cin ), cStream( inp ), use_C( true ), 
+    : use_C( true ), iStream( std::cin ), cStream( inp ), 
       fileReadSize( bufferSize ), stackSize( prioritySize + bufferSize )
 {
     setupStack();
@@ -146,9 +145,9 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
 }
 
 inline bool StackReader::checkSetReadable(){
-    if( !readable )
-        return false;
-    else if( stackPtr >= stackEnd ){
+    //if( !readable )
+    //    return false;
+    if( stackPtr >= stackEnd ){
         if( !fetchBuffer() )
             return false;
     }
@@ -156,7 +155,7 @@ inline bool StackReader::checkSetReadable(){
 }
 
 bool StackReader::isReadable() {
-    return checkSetReadable();
+    return (readable ? checkSetReadable() : false);
 }
 
 size_t StackReader::getFrontSize() const {
@@ -169,17 +168,6 @@ size_t StackReader::getBackSize() const {
 
 size_t StackReader::currentLength() const {
     return (size_t)(stackEnd - stackPtr);
-}
-
-void StackReader::getCharUnsafe( char& chr )
-{   // Simply read char on stack pointer, no checking whatsoever.
-    chr = *( stackPtr++ );
-}
-
-void StackReader::getStringUnsafe( char* str, size_t len )
-{   // Simply read string from stack pointer, no checking whatsoever.
-    std::memmove( str, stackPtr, len );
-    stackPtr += len;
 }
 
 bool StackReader::getChar( char& chr, int skipmode, size_t& endlines, size_t& posInLine )
@@ -206,9 +194,20 @@ bool StackReader::getChar( char& chr, int skipmode ){
 bool StackReader::getChar( char& chr ){
     if( !checkSetReadable() )
         return false;
-
     chr = *( stackPtr++ );
     return true;
+}
+
+int StackReader::getChar(){
+    if( !checkSetReadable() )
+        return -1;
+    return *( stackPtr++ );
+}
+
+int StackReader::peekChar(){
+    if( !checkSetReadable() )
+        return -1;
+    return *( stackPtr ); 
 }
 
 size_t StackReader::getString( char* st, size_t sz, int skipmode, size_t& endl, size_t& posl )
@@ -260,22 +259,31 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
         return false;
     
     char* lastEndlPos = stackPtr;
+    size_t originalEndlines = endlines;
     while(1){
         while(stackPtr < stackEnd){
             char c = *stackPtr; // Get a character at current stack pointer position.
 
             if(c == '\n'){
+                if(skipmode == SKIPMODE_SKIPWS_NONEWLINE){
+                    // Leave pointing to the '\n'.
+                    posInLine = ( endlines==originalEndlines ? 
+                                  posInLine + (size_t)(stackPtr - lastEndlPos) :
+                                  (size_t)(stackPtr - lastEndlPos) ); 
+                    return true; // Because newlines are not skipped.
+                }
+
+                // We're skipping it. Increment line counters.
                 ++endlines;
                 lastEndlPos = stackPtr;
 
-                if(skipmode == SKIPMODE_SKIPWS_NONEWLINE){
-                    posInLine = (size_t)(stackPtr - lastEndlPos);
-                    ++stackPtr;  // To point to next char after \n
-                    return true; // Because newlines are not skipped.
-                }
+                ++stackPtr;
+                continue;
             }
             else if( !std::isspace( c ) ){ // Non-whitespace character found.
-                posInLine = (size_t)(stackPtr - lastEndlPos);
+                posInLine = ( endlines==originalEndlines ? 
+                              posInLine + (size_t)(stackPtr - lastEndlPos) :
+                              (size_t)(stackPtr - lastEndlPos) );
                 return true;
             }
 
@@ -293,7 +301,9 @@ bool StackReader::skipWhitespace( int skipmode, size_t& endlines, size_t& posInL
         lastEndlPos = (char*)(stackPtr - diff);
     } 
 
-    posInLine = (size_t)(stackPtr - lastEndlPos);
+    posInLine = ( endlines==originalEndlines ? 
+                  posInLine + (size_t)(stackPtr - lastEndlPos) :
+                  (size_t)(stackPtr - lastEndlPos) );  
     return false;
 }
 
@@ -332,20 +342,23 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
         return false;
     
     char* lastEndlPos = stackPtr;
+    size_t originalEndlines = endlines;
     while(1){
         while(stackPtr < stackEnd){
-            char c = *(stackPtr++); // Get a character at current stack pointer position.
+            char c = *( stackPtr ); // Get a character at current stack pointer position.
 
             if(c == '\n'){
                 ++endlines;
                 lastEndlPos = stackPtr;
             }
             if( delimCallback( c ) ){ // Deliminating character occured now.
-                posInLine = (size_t)(stackPtr - lastEndlPos);
+                posInLine = ( endlines==originalEndlines ? 
+                              posInLine + (size_t)(stackPtr - lastEndlPos) :
+                              (size_t)(stackPtr - lastEndlPos) ); 
                 return true;
             }
 
-            //++stackPtr;
+            ++stackPtr;
         }
         
         // Calculate current position after endline, to setup new, adapted for new stackPtr.
@@ -358,7 +371,9 @@ bool StackReader::skipUntil( std::function< bool(char) > delimCallback,
         // New stack pointer has been acquired - setup the pos counter.
         lastEndlPos = (char*)(stackPtr - diff); 
     } 
-    posInLine = (size_t)(stackPtr - lastEndlPos);
+    posInLine = ( endlines==originalEndlines ? 
+                  posInLine + (size_t)(stackPtr - lastEndlPos) :
+                  (size_t)(stackPtr - lastEndlPos) );
     return false;
 }
 

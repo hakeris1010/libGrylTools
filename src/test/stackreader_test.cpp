@@ -4,12 +4,8 @@
 #include <algorithm>
 #include <gryltools/stackreader.hpp>
 
-static const bool debug = false;
+static bool debug = false;
 
-const char* data = 
-    "kawaii desu~~ i'm very cute :3  \n  \n \t  nee~~~   \n\t a   \nabcdef ghijk"
-    "  \n  \t\n gryllotronix woop woop\n da ting goes skrrrrra bnjab    \n\n"
-    "mbababd najbd \n asfbaf ayge u88 \n6a   aff a1337;";
 
 void testGetCharWithEndPos( gtools::StackReader& rdr, const char* result, 
                             size_t resSize, size_t endPosition ) {
@@ -42,65 +38,88 @@ void testGetChar( gtools::StackReader& rdr, const std::string& result ){
 }
 
 void testGetString( gtools::StackReader& rdr, int skipmode, const std::string& result, 
-                    size_t nulines, size_t posline ){
+                    size_t lns, size_t pss ){
     std::string buf( result.size() , '\0' );
-    size_t n=0, p=0;
+    size_t startPos = (lns==0 ? 5 : 0);
+    size_t startLns = 2;
+    size_t n = startLns, p = startPos;
 
     assert( rdr.getString( &buf[0], buf.size(), skipmode, n, p ) );
-    assert( buf == result );
-    assert( n == nulines );
-    assert( p == posline );
 
     if(debug)
-        std::cout<<"[ Test GetString ]: buffer:\n\""<< buf <<"\"\n[NuLines: "<<n<<", PosLines: "<<p<<"]\n";
+        std::cout<< "[ Test GetString ]: buffer:\n\""<< buf <<  \
+                    "\"\n[NuLines: "<<n<<", PosLines: "<<p<<"]\n"; 
+
+    assert( buf == result );
+    assert( n == (startLns + lns) );
+    assert( p == (startPos + pss) );
 }
 
-void testSkipWhitespace(gtools::StackReader& rdr, int skipmode, size_t nulines, size_t posline){
-    size_t n=0, p=0;
+void testSkipWhitespace(gtools::StackReader& rdr, int skipmode, size_t lns, size_t pss){
+    size_t startPos = (lns==0 ? 5 : 0);
+    size_t startLns = 2;
+    size_t n = startLns, p = startPos;
 
     assert( rdr.skipWhitespace( skipmode, n, p ) );
-    assert( n == nulines );
-    assert( p == posline );
 
     if(debug)
         std::cout<<"[ Skip'd WS: NuLines: "<<n<<", PosLines: "<<p<<"] \n";
+
+    assert( n == (startLns + lns) );
+    assert( p == (startPos + pss) );
 }
 
-void testSkipUntil( gtools::StackReader& rdr, size_t nulines, size_t posline, 
+void testSkipUntil( gtools::StackReader& rdr, size_t lns, size_t pss, 
                     std::function< bool(char) > delimCbk) 
 {
-    size_t n=0, p=0;
+    size_t startPos = (lns==0 ? 5 : 0);
+    size_t startLns = 2;
+    size_t n = startLns, p = startPos;
 
     assert( rdr.skipUntil( delimCbk, n, p ) );
-    assert( n == nulines );
-    assert( p == posline );
 
     if(debug)
-        std::cout<<"[ SkipUntil: NuLines: "<<n<<", PosLines: "<<p<<"] \n";
+        std::cout<<"[ SkipUntil: NuLines: "<<n<<", PosLines: "<<p<<"] \n"; 
+
+    assert( n == (startLns + lns) );
+    assert( p == (startPos + pss) );
 }
 
 void testSkipUntilDelim( gtools::StackReader& rdr, const std::string& delims, 
-                           size_t nulines, size_t posline )
+                           size_t lns, size_t pss )
 {
-    size_t n=0, p=0;
+    size_t startPos = (lns==0 ? 5 : 0);
+    size_t startLns = 2;
+    size_t n = startLns, p = startPos;
 
     assert( rdr.skipUntilDelim( delims, n, p ) );
-    assert( n == nulines );
-    assert( p == posline );
 
     if(debug)
         std::cout<<"[ SkipUntilDelim("<<delims<<"): NuLines: "<<n<<", PosLines: "<<p<<"] \n";
+    
+    assert( n == (startLns + lns) );
+    assert( p == (startPos + pss) );
 }
 
 void testLastCharactersByGetString( gtools::StackReader& rdr, const std::string& lastChars,
                                     int skipmode, int lns, int pss) {
     std::string buff( lastChars.size(), '\0' );
     std::string lastBuff;
-    size_t red = 0, n=0, p=0;
+    // Test position after endline (p), so that if no \n's occur, it just gets incremented.
+    size_t startPos = (lns==0 ? 5 : 0);
+    size_t startLns = 2;
+    size_t red = 0, n = startLns, p = startPos;
 
     // Read until non-full buffer have been read.
     while( (red = rdr.getString( &buff[0], buff.size(), skipmode, n, p )) == buff.size() ){
-        n += std::count( buff.begin(), buff.end(), '\n' );
+        //n += std::count( buff.begin(), buff.end(), '\n' );
+        for( auto i : buff ){
+            if(i == '\n'){
+                p = 0;
+                n++;
+            } else
+                p++;
+        }
         lastBuff = buff;
     }
     // The end. now set the end buffer.
@@ -111,8 +130,9 @@ void testLastCharactersByGetString( gtools::StackReader& rdr, const std::string&
         std::cout<<"[ Last chars of reader: \""<<lastBuff<<"\", Lines: "<<n<<", Pos:"<<p<<"\n";
 
     assert( lastBuff == lastChars );
-    assert( n == lns );
-    assert( !rdr.isReadable() );
+    assert( n == (startLns + lns) );
+    assert( p == (startPos + pss) );
+    //assert( !rdr.isReadable() );
 }
 
 void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool end ){
@@ -127,6 +147,7 @@ void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool e
     }
     if(debug)
         std::cout<<"\"\n[ Test GetCharUnsafe end. Left length: "<<rdr.currentLength()<<" ]\n";
+
     if(end)
         assert( !rdr.isReadable() );
     else
@@ -136,12 +157,12 @@ void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool e
 void testGetStringUnsafe( gtools::StackReader& rdr, const std::string& res, bool end ){
     char c;
     std::string buf( res.size(), '\0' );
-
     rdr.getStringUnsafe( &buf[0], buf.size() );
 
-    assert( buf == res );
     if(debug)
         std::cout<<"[ Test GetStringUnsafe. Left length: "<<rdr.currentLength()<<"\n";
+
+    assert( buf == res );
     if(end)
         assert( !rdr.isReadable() );
     else
@@ -149,12 +170,23 @@ void testGetStringUnsafe( gtools::StackReader& rdr, const std::string& res, bool
 }
 
 void testCurrentLength( gtools::StackReader& rdr, size_t len ){
+    assert( len == rdr.currentLength() );
     if(debug)
         std::cout<<"[ Current length: "<<rdr.currentLength()<<" ]\n";
-    assert( len == rdr.currentLength() );
 }
 
-int main(){
+const char* data = 
+    "kawaii desu~~ i'm very cute :3  \n  \n \t  nee~~~   \n\t a   \nabcdef ghijk"
+    "  \n  \t    \t  gryllotronix woop woop\n da ting goes skrrrrra bnjab    \n\n"
+    "mbababd najbd \n asfbaf ayge u88 \n6a   aff a1337;";
+
+int main( int argc, char** argv ){
+    if( argc > 1 ){
+        if( !strcmp( argv[1], "-v") || !strcmp( argv[1], "--debug") || 
+            !strcmp( argv[1], "--verbose") )
+            debug = true;
+    }
+
     std::cout<<"[ Testing gtools::StackReader ] ... ";
     if(debug) std::cout<<"\n";
 
@@ -173,7 +205,8 @@ int main(){
     testSkipWhitespace(rdr, gtools::StackReader::SKIPMODE_SKIPWS, 1, 3 );
 
     testGetChar(rdr, "a");
-    testSkipWhitespace(rdr, gtools::StackReader::SKIPMODE_SKIPWS_NONEWLINE, 1, 0 );
+    testSkipWhitespace(rdr, gtools::StackReader::SKIPMODE_SKIPWS_NONEWLINE, 0, 3 );
+    testGetChar(rdr, "\n");
 
     rdr.putChar( '-' );
     testGetChar(rdr, "-ab");    
@@ -188,10 +221,11 @@ int main(){
         return false;
     } );
 
-    testGetChar(rdr, "\n ");    
-    testSkipUntilDelim( rdr, "xi", 0, 11 );
+    testGetString(rdr, gtools::StackReader::SKIPMODE_SKIPWS, "g", 0, 8 );    
 
-    testLastCharactersByGetString(rdr, "1337;", gtools::StackReader::SKIPMODE_SKIPWS, 5, 0); 
+    testSkipUntilDelim( rdr, "xi", 0, 9 );
+
+    testLastCharactersByGetString(rdr, "1337;", gtools::StackReader::SKIPMODE_SKIPWS, 5, 16); 
     testCurrentLength(rdr, 0);
 
     rdr.putChar('B');
@@ -201,7 +235,7 @@ int main(){
     testCurrentLength(rdr, 0);
 
     rdr.putString(" \n noot n\n  oot");
-    testLastCharactersByGetString(rdr, "oot", gtools::StackReader::SKIPMODE_SKIPWS, 2, 0); 
+    testLastCharactersByGetString(rdr, "oot", gtools::StackReader::SKIPMODE_SKIPWS, 2, 6); 
 
     rdr.putString("testing unsafe");
     testGetCharUnsafe(rdr, "testin", false);
