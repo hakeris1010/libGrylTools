@@ -135,7 +135,7 @@ release: relops $(GRYLTOOLS)
 gryltools_incl: $(HEADERS_GRYLTOOLS) $(HEADERS_GRYLTOOLSPP)
 	mkdir -p $(GRYLTOOLS_INCL) 
 	for file in $^ ; do \
-		cp $$file $(GRYLTOOLS_INCL) ; \
+		cp -u $$file $(GRYLTOOLS_INCL) ; \
 	done
 	
 $(GRYLTOOLS_LIB): $(SOURCES_GRYLTOOLS:.c=.o) $(SOURCES_GRYLTOOLSPP:.cpp=.o) 
@@ -162,7 +162,7 @@ test_debops:
 
 tests: tests_cpp tests_c
 
-tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o)
+tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o) $(TEST_C_SOURCES:.c=.o)
 	for file in $^ ; do \
 		y=$${file%.o} ; \
 		exe=$(TESTDIR)/$${y##*/} ; \

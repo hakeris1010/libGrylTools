@@ -112,7 +112,6 @@ void testLastCharactersByGetString( gtools::StackReader& rdr, const std::string&
 
     // Read until non-full buffer have been read.
     while( (red = rdr.getString( &buff[0], buff.size(), skipmode, n, p )) == buff.size() ){
-        //n += std::count( buff.begin(), buff.end(), '\n' );
         for( auto i : buff ){
             if(i == '\n'){
                 p = 0;
@@ -132,7 +131,7 @@ void testLastCharactersByGetString( gtools::StackReader& rdr, const std::string&
     assert( lastBuff == lastChars );
     assert( n == (startLns + lns) );
     assert( p == (startPos + pss) );
-    //assert( !rdr.isReadable() );
+    assert( !rdr.isReadable() );
 }
 
 void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool end ){
@@ -148,6 +147,8 @@ void testGetCharUnsafe( gtools::StackReader& rdr, const std::string& res, bool e
     if(debug)
         std::cout<<"\"\n[ Test GetCharUnsafe end. Left length: "<<rdr.currentLength()<<" ]\n";
 
+    // Update readiness
+    rdr.peekChar();
     if(end)
         assert( !rdr.isReadable() );
     else
@@ -163,6 +164,10 @@ void testGetStringUnsafe( gtools::StackReader& rdr, const std::string& res, bool
         std::cout<<"[ Test GetStringUnsafe. Left length: "<<rdr.currentLength()<<"\n";
 
     assert( buf == res );
+
+    // Update readiness
+    rdr.peekChar(); 
+
     if(end)
         assert( !rdr.isReadable() );
     else
@@ -233,7 +238,7 @@ int main( int argc, char** argv ){
 
     testGetCharWithEndPos(rdr,"B", 0);
     testCurrentLength(rdr, 0);
-
+    
     rdr.putString(" \n noot n\n  oot");
     testLastCharactersByGetString(rdr, "oot", gtools::StackReader::SKIPMODE_SKIPWS, 2, 6); 
 

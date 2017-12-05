@@ -54,6 +54,7 @@ Temporary Items
 *.swp
 *.depend
 *.layout
+*.stackdump
 
 # Objects
 *.o

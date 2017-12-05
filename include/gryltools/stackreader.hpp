@@ -21,7 +21,7 @@ protected:
     // Once the stack becomes empty, the updateBuffer() is triggered, 
     // reading another chunk from the stream.
     
-    char* stackBuffer;
+    char* stackBuffer = nullptr;
 
     size_t fileReadSize = DEFAULT_READBUFFER;
     size_t stackSize;

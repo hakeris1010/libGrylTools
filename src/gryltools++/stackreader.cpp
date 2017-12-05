@@ -85,9 +85,6 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
     if( dataSz ){ 
         size_t currFront = stackPtr - stackBuffer;
         size_t currBack  = (stackBuffer + stackSize) - stackEnd;
- 
-        //if( (stackBuffer + frontSpace <= stackPtr) && 
-        //    (stackEnd + backSpace <= stackBuffer + stackSize) )
         
         // Check if current spaces on front and back are good.
         if( currFront >= frontSpace && currBack >= backSpace )
@@ -108,8 +105,11 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
         }
     }
     else{ // No data is present - just check if current size is good.
-        if( stackSize >= frontSpace + backSpace )
+        if( stackSize >= frontSpace + backSpace ){
+            stackEnd = stackBuffer + stackSize;
+            stackPtr = stackEnd;
             return true;
+        }
         else{ // Set the reallocated memory new size.
             newStackSize = frontSpace + backSpace; 
         }
@@ -133,6 +133,11 @@ bool StackReader::ensureSpace( size_t frontSpace, size_t backSpace, bool moveAll
         // Set new stack pointers.
         stackPtr = moveDestination + newDataStart;
         stackEnd = stackPtr + dataSz;
+    }
+    // If no moving, just allocated new buffer, then just update the stack pointers.
+    else{
+        stackEnd = moveDestination + stackSize;
+        stackPtr = stackEnd;
     }
 
     // If we have reallocated stuff, we need to delete old buffer, and set the new pointer.
