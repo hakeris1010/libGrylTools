@@ -52,16 +52,19 @@ LIBS_GRYLTOOLS=
 #--------- Gryltools C++ --------#
        
 SOURCES_GRYLTOOLSPP= src/gryltools++/stackreader.cpp \
+					 src/gryltools++/stringtools.cpp
 
 HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
 					 src/gryltools++/stackreader.hpp \
+					 src/gryltools++/stringtools.hpp
 				   # src/gryltools++/glogpp.hpp 
 
 #--------- Test sources ---------#
 
 TEST_C_SOURCES= src/test/test1.c
 
-TEST_CPP_SOURCES= src/test/stackreader_test.cpp 
+TEST_CPP_SOURCES= src/test/stackreader_test.cpp \
+				  src/test/stringtools_test.cpp
 
 TEST_LIBS= -lgryltools
 
