@@ -10,7 +10,7 @@ CXXFLAGS= -std=c++11
 LDFLAGS= 
 
 TEST_CFLAGS= -std=c99 -g
-TEST_CXXFLAGS= -std=c++11 -g
+TEST_CXXFLAGS= -std=c++14 -g
 TEST_LDFLAGS=
 TEST_EXEC_ARGS=
 
@@ -56,7 +56,8 @@ SOURCES_GRYLTOOLSPP= src/gryltools++/stackreader.cpp \
 
 HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
 					 src/gryltools++/stackreader.hpp \
-					 src/gryltools++/stringtools.hpp
+					 src/gryltools++/stringtools.hpp \
+					 src/gryltools++/printtools.hpp 
 				   # src/gryltools++/glogpp.hpp 
 
 #--------- Test sources ---------#
@@ -64,7 +65,8 @@ HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
 TEST_C_SOURCES= src/test/test1.c
 
 TEST_CPP_SOURCES= src/test/stackreader_test.cpp \
-				  src/test/stringtools_test.cpp
+				  src/test/stringtools_test.cpp \
+				  src/test/printtools_test.cpp 
 
 TEST_LIBS= -lgryltools
 
