@@ -12,6 +12,7 @@ void StringTools::escapeSpecials( std::string& str, bool escapeExtended ){
         if( getEscapeSequence( str[i], buf, escapeExtended ) ){
             str.erase(i, 1);
             str.insert(i, buf);
+            i += buf.size()-1;
         }
     }
 }
