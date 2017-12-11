@@ -6,11 +6,11 @@ CXX = g++
 AR = ar
 
 CFLAGS= -std=c99 
-CXXFLAGS= -std=c++11
+CXXFLAGS= -std=c++14 
 LDFLAGS= 
 
-TEST_CFLAGS= -std=c99 -g -O0 
-TEST_CXXFLAGS= -std=c++14 -g -O0 
+TEST_CFLAGS= -std=c99 
+TEST_CXXFLAGS= -std=c++14 
 TEST_LDFLAGS=
 TEST_EXEC_ARGS=
 
@@ -114,7 +114,7 @@ endif
 #====================================#
 
 
-all: debug test_main
+all: debug 
 
 debops: 
 	$(eval CFLAGS += $(DEBUG_CFLAGS) $(DEBUG_INCLUDES))
@@ -128,8 +128,8 @@ relops:
 	$(eval LDFLAGS += $(RELEASE_LDFLAGS) $(RELEASE_LIBCLUDES)) 
 	$(eval BINPREFIX = $(BINDIR_RELEASE)) 
 
-debug: debops $(GRYLTOOLS) 
-release: relops $(GRYLTOOLS) 
+debug: debops $(GRYLTOOLS) test_main 
+release: relops $(GRYLTOOLS) test_main 
 
 .c.o:
 	$(CC) $(CFLAGS) -fpic -c $*.c -o $*.o
@@ -161,11 +161,11 @@ test_main: test_debops tests_cpp
 	done
 
 test_debops: 
-	$(eval CFLAGS   = $(TEST_CFLAGS)   $(TEST_INCLUDES) )
-	$(eval CXXFLAGS = $(TEST_CXXFLAGS) $(TEST_INCLUDES) )
-	$(eval LDFLAGS  = $(TEST_LDFLAGS)  $(TEST_LIBCLUDES))
+	$(eval CFLAGS   += $(TEST_CFLAGS)   $(TEST_INCLUDES) )
+	$(eval CXXFLAGS += $(TEST_CXXFLAGS) $(TEST_INCLUDES) )
+	$(eval LDFLAGS  += $(TEST_LDFLAGS)  $(TEST_LIBCLUDES))
 
-tests: tests_cpp tests_c
+tests: tests_cpp 
 
 tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o) $(TEST_C_SOURCES:.c=.o)
 	for file in $^ ; do \
@@ -180,11 +180,11 @@ tests_cpp: $(TEST_CPP_SOURCES:.cpp=.o) $(TEST_C_SOURCES:.c=.o)
 # y=$${file%.o} ; \
 # $(CXX) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
 
-tests_c: $(TEST_C_SOURCES:.c=.o)
-	for file in $^ ; do \
-		y=$${file%.o} ; \
-		$(CC) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
-	done
+# tests_c: $(TEST_C_SOURCES:.c=.o)
+#	for file in $^ ; do \
+#		y=$${file%.o} ; \
+#		$(CC) -o $(TESTDIR)/$${y##*/} $$file $(TEST_LIBS) $(LDFLAGS) ; \
+#	done
 
 #===================================#
 
