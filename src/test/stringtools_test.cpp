@@ -108,8 +108,8 @@ int main(int argc, char** argv){
                         "\\0\\0\\0\\0\\0\\x01\\x01\\x01\\n\\0\\t", true );
     testEscapeSpecials( std::string("\0\0\0\0\0\x01\x01\x01\n\0\t", 11),
                         "\\0\\0\\0\\0\\0\x01\x01\x01\\n\\0\\t", false ); 
-    testEscapeSpecials( "\"\\'\"", "\\\"\\\\\'\\\"", true );
- 
+    testEscapeSpecials( "\"\\\'\"", "\\\"\\\\\\\'\\\"", true );
+                    //    "\'"         \"\\\'\"
     if(debug)
         std::cout<<"\n"; 
     std::cout<<"[ Passed! ]\n";
