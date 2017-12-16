@@ -11,20 +11,31 @@ private:
     std::mutex              d_mutex;
     std::condition_variable d_condition;
     std::deque<T>           d_queue;
+
 public:
-    void push(T const& value) {
+    void push( T const& value ) {
         {
             std::unique_lock<std::mutex> lock(this->d_mutex);
             d_queue.push_front(value);
         }
         this->d_condition.notify_one();
     }
+
+    void push( T&& value ) {
+        {
+            std::unique_lock<std::mutex> lock(this->d_mutex);
+            d_queue.push_front( std::move(value) );
+        }
+        this->d_condition.notify_one();
+    } 
+
     T pop() {
 		// Acquire a lock.
         std::unique_lock<std::mutex> lock(this->d_mutex);
 		
-		// Simultaneously unlock the lock, and use a Lambda Predicate feature to check 
-		// whether block is needed. Block only if pred returns false - in this case, if queue is empty.
+		// Simultaneously unlock the lock, and use a Lambda Predicate feature
+        // to check the blocking loop end condition.
+        // End Block only if lambda returns true - queue is NOT empty.
         this->d_condition.wait(lock, [=]{ return !this->d_queue.empty(); });
 
 		// Create a temporary variable to hold the value of the queue back.
