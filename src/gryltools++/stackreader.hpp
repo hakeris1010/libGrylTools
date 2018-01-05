@@ -92,6 +92,9 @@ public:
     bool skipUntilDelim( const std::string& delims );
     bool skipUntilDelim( const std::string& delims, size_t& endls, size_t& posls );
 
+    //bool getStringUntilDelim( std::string& buf, const std::string& delim );
+    //bool getStringUntilRegex( std::string& buf, const std::string& regex );
+
     bool putChar( char c );
     bool unRead( size_t sz );
     bool putString( const char* str, size_t sz );
