@@ -192,7 +192,7 @@ clean:
 	$(RM) *.o */*.o */*/*.o */*/*/*.o
 
 clean_all: clean
-	$(RM) -rf $(BINDIR) $(LIBDIR)
+	$(RM) -rf bin lib
 
 # $(RM) -rf $(BINDIR)/* $(BINDIR)/*/* $(BINDIR)/*/*/* $(LIBDIR)/* 
 

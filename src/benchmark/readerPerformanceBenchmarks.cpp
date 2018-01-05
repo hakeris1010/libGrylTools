@@ -117,8 +117,8 @@ StreamStats readBuffered(std::istream& is, size_t buffSize){
     is.clear();
     is.seekg(0, is.beg);
 
-    size_t posInLine = 0;
 	size_t lineCount = 0;
+    long long lastLinePos = 0;
 
 	std::string buff( buffSize, '\0' );
 
@@ -126,17 +126,23 @@ StreamStats readBuffered(std::istream& is, size_t buffSize){
         is.read( &buff[0], buff.size() );
         size_t readct = is.gcount();
 
-        for( size_t i = 0; i < readct; i++ ){
-            if( buff[i] == '\n' ){
-                posInLine = 0;
+        lastLinePos = (long long)(buff.c_str()) - lastLinePos;
+
+        const char* end = buff.c_str() + readct;
+        const char* i;
+        for( i = buff.c_str(); i < end; i++ ){
+            if( *i == '\n' ){
                 lineCount++;
+                lastLinePos = (long long)i;
+                //lastLinePos = 0;
             }
-            else
-                posInLine++;
+            //else
+            //    lastLinePos++;
         }
+        lastLinePos = (long long)i - lastLinePos;
     }
 
-    return StreamStats( lineCount, posInLine );
+    return StreamStats( lineCount, (size_t)lastLinePos );
 }
 
 StreamStats readUsingStackReaderCBC(std::istream& is){
