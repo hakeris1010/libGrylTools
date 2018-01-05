@@ -7,8 +7,8 @@
 #include <string>
 #include <gryltools/stackreader.hpp>
 
-const size_t SAMPLE_SIZE = 50000;
-const size_t ITERATIONS = 1000;
+const size_t SAMPLE_SIZE = 50001;
+const size_t ITERATIONS = 10000;
 const size_t BUFFSIZE = 2048;
 
 const bool PRINT_SAMPLE = false;
@@ -139,6 +139,57 @@ StreamStats readBuffered(std::istream& is, size_t buffSize){
     return StreamStats( lineCount, posInLine );
 }
 
+StreamStats readUsingStackReaderCBC(std::istream& is){
+    is.clear();
+    is.seekg(0, is.beg);
+
+    size_t posInLine = 0;
+	size_t lineCount = 0;
+
+    gtools::StackReader reader( is, 1024, 2048 );
+
+    char c;
+    while( reader.getChar(c, gtools::StackReader::SKIPMODE_SKIPWS, lineCount, posInLine) ){
+        if( c == '\n' ){
+            posInLine = 0;
+            lineCount++;
+        }
+        else
+            posInLine++;
+    }
+
+    return StreamStats( lineCount, posInLine );
+}
+
+StreamStats readUsingStackReaderBUFF(std::istream& is, size_t buffSize){
+    is.clear();
+    is.seekg(0, is.beg);
+
+    size_t posInLine = 0;
+	size_t lineCount = 0;
+
+    gtools::StackReader reader( is, buffSize, buffSize );
+
+	std::string buff( buffSize, '\0' );
+
+    while( reader.isReadable() ){
+        size_t readct = reader.getString( &buff[0], buff.size(), 
+            gtools::StackReader::SKIPMODE_SKIPWS, lineCount, posInLine );
+
+        for( size_t i = 0; i < readct; i++ ){
+            if( buff[i] == '\n' ){
+                posInLine = 0;
+                lineCount++;
+            }
+            else
+                posInLine++;
+        } 
+    }
+
+    return StreamStats( lineCount, posInLine );
+}
+
+
 void generateSample( std::string& str, size_t sampleSize, size_t maxLineSize = 80 ){
     size_t nextLinePos = 0 + (rand() % maxLineSize);
 
@@ -175,6 +226,14 @@ int main(){
  
     std::cout<< "\n\nbuffXtimes:\n";
     functionExecTimeReturnCallback( readBuffered, ITERATIONS, [](StreamStats&& st){
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ); 
+
+    std::cout<< "\n\nstackReaderCBC:\n";
+    functionExecTimeReturnCallback( readUsingStackReaderCBC, ITERATIONS, [](StreamStats&& st){
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr ); 
+
+    std::cout<< "\n\nstackReaderBUFF:\n";
+    functionExecTimeReturnCallback( readUsingStackReaderBUFF, ITERATIONS, [](StreamStats&& st){
         std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ); 
     
     return 0;
