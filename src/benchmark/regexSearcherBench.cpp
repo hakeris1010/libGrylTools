@@ -18,9 +18,13 @@ int main ()
     //const char* end = s + sizeof(s);
 
     while (std::regex_search (s, m, e)) {
-        for (auto&& x : m) 
-            std::cout << x << " ";
-        std::cout << std::endl;
+        std::cout<<"Size: "<< m.size() <<"\n";
+
+        // Start from 1st submatch, because 0th is the whole regex.
+        for (size_t i = 1; i < m.size(); i++) 
+            std::cout<<" "<< i <<": "<< m[i] <<"\n";
+
+        std::cout << "\n";
         s = m.suffix().str();
     }
 
