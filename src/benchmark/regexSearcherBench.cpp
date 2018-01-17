@@ -2,6 +2,28 @@
 #include <string>
 #include <regex>
 
+struct Token{
+    size_t id;
+    std::string data;
+};
+
+/*class Tokenizer{
+private:
+    char* buf
+
+public:
+void getNextToken_Priv( const char* buf, size_t len, Token& tok ){
+
+}
+
+void fetchToBuffer( std::istream& is, char* buf, size_t len ){
+
+}
+
+void getNextToken( std::istream& is, 
+
+};*/
+
 int main ()
 {
     std::string reg = R"((\b[[:alpha:]]+\b)|(\b\d+\b)|(\s+)|(.))";
@@ -12,8 +34,8 @@ int main ()
     std::cout << "Target sequence: "<< str << std::endl;
     std::cout << "Regular expression: "<< reg << std::endl;
      
-    std::cout<< "\nMatching with std::sregex_iterator.\n";
-    std::string s = str;
+    /*std::cout<< "\nMatching with std::sregex_iterator.\n";
+
     for(std::sregex_iterator i = std::sregex_iterator(s.begin(), s.end(), r);
                              i != std::sregex_iterator();
                              ++i)
@@ -28,12 +50,14 @@ int main ()
                 break;
             }
         }
-    }  
+    } */ 
 
-    /*std::cout<< "\n\nMatching with std::regex_search.\n";
-    s = str;
-    std::smatch m;
-    while (std::regex_search (s, m, r)) {
+    std::cout<< "\n\nMatching with std::regex_search.\n";
+    const char* bufBeg = str.c_str();
+    const char* bufEnd = bufBeg + str.size();
+    std::cmatch m;
+
+    while (std::regex_search (bufBeg, bufEnd, m, r)) {
         std::cout<<"Match value: "<< m.str() <<", Matches: "<< m.size() <<"\n";
 
         // Start from 1st submatch, because 0th is the whole regex.
@@ -41,8 +65,8 @@ int main ()
             std::cout<<" "<< i <<": "<< m[i] <<"\n";
 
         std::cout << "\n";
-        s = m.suffix().str();
-    } */
+        bufBeg += m.position() + m.length();
+    } 
 
     return 0;
 }

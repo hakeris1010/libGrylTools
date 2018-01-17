@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <gryltools/stackreader.hpp>
+#include <gryltools/execution_time.hpp>
 
 const size_t SAMPLE_SIZE = 50001;
 const size_t ITERATIONS = 10000;
@@ -13,9 +14,7 @@ const size_t BUFFSIZE = 2048;
 
 const bool PRINT_SAMPLE = false;
 
-const int CALLBACK_EVERY_ITERATION = 1;
-const int CALLBACK_ONLY_AT_THE_END = 2;
-
+/*
 template<typename... Args>
 void functionExecTimeReturnCallback( auto&& func, size_t times, auto&& callback, 
                                      int callbackFlags, Args&&... functionArgs ){
@@ -62,6 +61,7 @@ template<typename... Args>
 void functionExecTime( auto&& func, Args&&... args ){
     functionExecTimeRepeated( func, 0, args... );
 }
+*/
 
 struct StreamStats{
     size_t lineCount = 0;
@@ -226,21 +226,27 @@ int main(){
 
     std::istringstream sstr( sample, std::ios_base::in | std::ios_base::binary );
 
-    std::cout<< "CharByChar:\n";
+    using namespace gtools;
+
+    std::cout<< "CharByChar:\nExecution took " <<
     functionExecTimeReturnCallback( readCharByChar, ITERATIONS, [](StreamStats&& st){
-        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr );
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr ).count()
+    << " ms\n";
  
-    std::cout<< "\n\nbuffXtimes:\n";
+    std::cout<< "\n\nbuffXtimes:\n" <<
     functionExecTimeReturnCallback( readBuffered, ITERATIONS, [](StreamStats&& st){
-        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ); 
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ).count()
+    << " ms\n"; 
 
-    std::cout<< "\n\nstackReaderCBC:\n";
+    std::cout<< "\n\nstackReaderCBC:\n" <<
     functionExecTimeReturnCallback( readUsingStackReaderCBC, ITERATIONS, [](StreamStats&& st){
-        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr ); 
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr ).count()
+    << " ms\n"; 
 
-    std::cout<< "\n\nstackReaderBUFF:\n";
+    std::cout<< "\n\nstackReaderBUFF:\n" <<
     functionExecTimeReturnCallback( readUsingStackReaderBUFF, ITERATIONS, [](StreamStats&& st){
-        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ); 
+        std::cout<< st <<"\n"; }, CALLBACK_ONLY_AT_THE_END, sstr, BUFFSIZE ).count()
+    << " ms\n"; 
     
     return 0;
 }

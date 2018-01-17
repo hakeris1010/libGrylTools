@@ -57,7 +57,8 @@ SOURCES_GRYLTOOLSPP= src/gryltools++/stackreader.cpp \
 HEADERS_GRYLTOOLSPP= src/gryltools++/blockingqueue.hpp \
 					 src/gryltools++/stackreader.hpp \
 					 src/gryltools++/stringtools.hpp \
-					 src/gryltools++/printtools.hpp 
+					 src/gryltools++/printtools.hpp \
+					 src/gryltools++/execution_time.hpp
 				   # src/gryltools++/glogpp.hpp 
 
 #--------- Test sources ---------#

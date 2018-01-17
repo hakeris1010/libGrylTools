@@ -1,5 +1,3 @@
-#include <iostream>
-#include <string>
 #include <chrono>
 
 /*!
@@ -12,7 +10,7 @@ const int CALLBACK_EVERY_ITERATION = 1;
 const int CALLBACK_ONLY_AT_THE_END = 2;
 
 template<typename... Args>
-auto functionExecTimeReturnCallback( auto&& func, size_t times, auto&& callback, 
+inline auto functionExecTimeReturnCallback( auto&& func, size_t times, auto&& callback, 
                                      int callbackFlags, Args&&... functionArgs ){
     using namespace std::chrono;
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
@@ -36,13 +34,13 @@ auto functionExecTimeReturnCallback( auto&& func, size_t times, auto&& callback,
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-    std::cout << "f() took " << time_span.count() << " ms\n";
+    //std::cout << "f() took " << time_span.count() << " ms\n";
 
     return time_span;
 }
 
 template<typename... Args>
-auto functionExecTimeRepeated( auto&& func, size_t times, Args&&... args ){
+inline auto functionExecTimeRepeated( auto&& func, size_t times, Args&&... args ){
     using namespace std::chrono;
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
@@ -52,13 +50,13 @@ auto functionExecTimeRepeated( auto&& func, size_t times, Args&&... args ){
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-    std::cout << "f() took " << time_span.count() << " ms\n";
+    //std::cout << "f() took " << time_span.count() << " ms\n";
 
     return time_span;
 }
 
 template<typename... Args>
-auto functionExecTime( auto&& func, Args&&... args ){
+inline auto functionExecTime( auto&& func, Args&&... args ){
     return functionExecTimeRepeated( func, 0, args... );
 }
 
